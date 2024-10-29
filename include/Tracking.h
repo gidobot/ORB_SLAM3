@@ -1,18 +1,18 @@
 /**
-* This file is part of ORB-SLAM3
+* This file is part of SIFT-SLAM3
 *
 * Copyright (C) 2017-2021 Carlos Campos, Richard Elvira, Juan J. Gómez Rodríguez, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
 * Copyright (C) 2014-2016 Raúl Mur-Artal, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
 *
-* ORB-SLAM3 is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+* SIFT-SLAM3 is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
 * License as published by the Free Software Foundation, either version 3 of the License, or
 * (at your option) any later version.
 *
-* ORB-SLAM3 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
+* SIFT-SLAM3 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
 * the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 * GNU General Public License for more details.
 *
-* You should have received a copy of the GNU General Public License along with ORB-SLAM3.
+* You should have received a copy of the GNU General Public License along with SIFT-SLAM3.
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
@@ -29,20 +29,21 @@
 #include "LocalMapping.h"
 #include "LoopClosing.h"
 #include "Frame.h"
-#include "ORBVocabulary.h"
+#include "SIFTVocabulary.h"
 #include "KeyFrameDatabase.h"
-#include "ORBextractor.h"
 #include "MapDrawer.h"
 #include "System.h"
 #include "ImuTypes.h"
 #include "Settings.h"
+#include "StereoOdometer.h"
+#include "MonoOdometer.h"
 
 #include "GeometricCamera.h"
 
 #include <mutex>
 #include <unordered_set>
 
-namespace ORB_SLAM3
+namespace SIFT_SLAM3
 {
 
 class Viewer;
@@ -52,25 +53,27 @@ class LocalMapping;
 class LoopClosing;
 class System;
 class Settings;
+class StereoOdometer;
+class MonoOdometer;
 
 class Tracking
 {  
 
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    Tracking(System* pSys, ORBVocabulary* pVoc, FrameDrawer* pFrameDrawer, MapDrawer* pMapDrawer, Atlas* pAtlas,
+    Tracking(System* pSys, SIFTVocabulary* pVoc, FrameDrawer* pFrameDrawer, MapDrawer* pMapDrawer, Atlas* pAtlas,
              KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor, Settings* settings, const string &_nameSeq=std::string());
 
     ~Tracking();
 
     // Parse the config file
     bool ParseCamParamFile(cv::FileStorage &fSettings);
-    bool ParseORBParamFile(cv::FileStorage &fSettings);
+    bool ParseSIFTParamFile(cv::FileStorage &fSettings);
     bool ParseIMUParamFile(cv::FileStorage &fSettings);
 
     // Preprocess the input and call Track(). Extract features and performs stereo matching.
     Sophus::SE3f GrabImageStereo(const cv::Mat &imRectLeft,const cv::Mat &imRectRight, const double &timestamp, string filename);
-    Sophus::SE3f GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const double &timestamp, string filename);
+    // Sophus::SE3f GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const double &timestamp, string filename);
     Sophus::SE3f GrabImageMonocular(const cv::Mat &im, const double &timestamp, string filename);
 
     void GrabImuData(const IMU::Point &imuMeasurement);
@@ -183,7 +186,7 @@ public:
 
     vector<double> vdRectStereo_ms;
     vector<double> vdResizeImage_ms;
-    vector<double> vdORBExtract_ms;
+    vector<double> vdSIFTExtract_ms;
     vector<double> vdStereoMatch_ms;
     vector<double> vdIMUInteg_ms;
     vector<double> vdPosePred_ms;
@@ -210,6 +213,7 @@ protected:
     void UpdateLastFrame();
     bool TrackWithMotionModel();
     bool PredictStateIMU();
+    bool TrackWithOdometry();
 
     bool Relocalization();
 
@@ -257,12 +261,8 @@ protected:
     LocalMapping* mpLocalMapper;
     LoopClosing* mpLoopClosing;
 
-    //ORB
-    ORBextractor* mpORBextractorLeft, *mpORBextractorRight;
-    ORBextractor* mpIniORBextractor;
-
     //BoW
-    ORBVocabulary* mpORBVocabulary;
+    SIFTVocabulary* mpSIFTVocabulary;
     KeyFrameDatabase* mpKeyFrameDB;
 
     // Initalization (only for monocular)
@@ -349,7 +349,17 @@ protected:
     double mTime_LocalMapTrack;
     double mTime_NewKF_Dec;
 
+    SIFT_SLAM3::StereoOdometer stereoOdometer; //!> Stereo odometer viso2 based
+    SIFT_SLAM3::MonoOdometer monoOdometer; //!> Mono odometer viso2 based
+
     GeometricCamera* mpCamera, *mpCamera2;
+    
+    int nFeatures;
+    int maxDim;
+    int nLevels;
+    int fIniThFAST;
+    int fMinThFAST;
+    float fScaleFactor;
 
     int initID, lastID;
 
@@ -370,6 +380,6 @@ public:
     cv::Mat mImRight;
 };
 
-} //namespace ORB_SLAM
+} //namespace SIFT_SLAM
 
 #endif // TRACKING_H

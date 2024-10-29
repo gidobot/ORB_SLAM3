@@ -1,18 +1,18 @@
 /**
-* This file is part of ORB-SLAM3
+* This file is part of SIFT-SLAM3
 *
 * Copyright (C) 2017-2021 Carlos Campos, Richard Elvira, Juan J. Gómez Rodríguez, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
 * Copyright (C) 2014-2016 Raúl Mur-Artal, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
 *
-* ORB-SLAM3 is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+* SIFT-SLAM3 is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
 * License as published by the Free Software Foundation, either version 3 of the License, or
 * (at your option) any later version.
 *
-* ORB-SLAM3 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
+* SIFT-SLAM3 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
 * the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 * GNU General Public License for more details.
 *
-* You should have received a copy of the GNU General Public License along with ORB-SLAM3.
+* You should have received a copy of the GNU General Public License along with SIFT-SLAM3.
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
@@ -28,7 +28,7 @@
 #include "Thirdparty/Sophus/sophus/geometry.hpp"
 
 #include "ImuTypes.h"
-#include "ORBVocabulary.h"
+#include "SIFTVocabulary.h"
 
 #include "Converter.h"
 #include "Settings.h"
@@ -39,7 +39,10 @@
 #include "Eigen/Core"
 #include "sophus/se3.hpp"
 
-namespace ORB_SLAM3
+#include "StereoOdometer.h"
+#include "MonoOdometer.h"
+
+namespace SIFT_SLAM3
 {
 #define FRAME_GRID_ROWS 48
 #define FRAME_GRID_COLS 64
@@ -48,7 +51,6 @@ class MapPoint;
 class KeyFrame;
 class ConstraintPoseImu;
 class GeometricCamera;
-class ORBextractor;
 
 class Frame
 {
@@ -59,19 +61,16 @@ public:
     Frame(const Frame &frame);
 
     // Constructor for stereo cameras.
-    Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timeStamp, ORBextractor* extractorLeft, ORBextractor* extractorRight, ORBVocabulary* voc, cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth, GeometricCamera* pCamera,Frame* pPrevF = static_cast<Frame*>(NULL), const IMU::Calib &ImuCalib = IMU::Calib());
+    Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timeStamp, SIFTVocabulary* voc, cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth, GeometricCamera* pCamera, StereoOdometer &odometer, Frame* pPrevF = static_cast<Frame*>(NULL), const IMU::Calib &ImuCalib = IMU::Calib());
 
     // Constructor for RGB-D cameras.
-    Frame(const cv::Mat &imGray, const cv::Mat &imDepth, const double &timeStamp, ORBextractor* extractor,ORBVocabulary* voc, cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth, GeometricCamera* pCamera,Frame* pPrevF = static_cast<Frame*>(NULL), const IMU::Calib &ImuCalib = IMU::Calib());
+    Frame(const cv::Mat &imGray, const cv::Mat &imDepth, const double &timeStamp, SIFTVocabulary* voc, cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth, GeometricCamera* pCamera, Frame* pPrevF = static_cast<Frame*>(NULL), const IMU::Calib &ImuCalib = IMU::Calib());
 
     // Constructor for Monocular cameras.
-    Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extractor,ORBVocabulary* voc, GeometricCamera* pCamera, cv::Mat &distCoef, const float &bf, const float &thDepth, Frame* pPrevF = static_cast<Frame*>(NULL), const IMU::Calib &ImuCalib = IMU::Calib());
+    Frame(const cv::Mat &imGray, const double &timeStamp, SIFTVocabulary* voc, GeometricCamera* pCamera, cv::Mat &distCoef, const float &bf, const float &thDepth, MonoOdometer &odometer, Frame* pPrevF = static_cast<Frame*>(NULL), const IMU::Calib &ImuCalib = IMU::Calib());
 
     // Destructor
     // ~Frame();
-
-    // Extract ORB on the image. 0 for left image and 1 for right image.
-    void ExtractORB(int flag, const cv::Mat &im, const int x0, const int x1);
 
     // Compute Bag of Words representation.
     void ComputeBoW();
@@ -190,10 +189,7 @@ public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     // Vocabulary used for relocalization.
-    ORBVocabulary* mpORBvocabulary;
-
-    // Feature extractor. The right is used only in the stereo case.
-    ORBextractor* mpORBextractorLeft, *mpORBextractorRight;
+    SIFTVocabulary* mpSIFTvocabulary;
 
     // Frame timestamp.
     double mTimeStamp;
@@ -238,7 +234,7 @@ public:
     DBoW2::BowVector mBowVec;
     DBoW2::FeatureVector mFeatVec;
 
-    // ORB descriptor, each row associated to a keypoint.
+    // SIFT descriptor, each row associated to a keypoint.
     cv::Mat mDescriptors, mDescriptorsRight;
 
     // MapPoints associated to keypoints, NULL pointer if no association.
@@ -291,6 +287,9 @@ public:
 
     static bool mbInitialComputations;
 
+    vector<viso2::Matcher_SIFT::p_match> matchesCircular; //!> Circular matches with previous stereo frame in odometry
+    vector<cv::DMatch> matches; //!> Current stereo matches
+
     map<long unsigned int, cv::Point2f> mmProjectPoints;
     map<long unsigned int, cv::Point2f> mmMatchedInImage;
 
@@ -299,7 +298,7 @@ public:
     int mnDataset;
 
 #ifdef REGISTER_TIMES
-    double mTimeORB_Ext;
+    double mTimeSIFT_Ext;
     double mTimeStereoMatch;
 #endif
 
@@ -316,11 +315,17 @@ private:
     // Assign keypoints to the grid for speed up feature matching (called in the constructor).
     void AssignFeaturesToGrid();
 
+    // Set hardcoded SIFT scale info
+    void SetScaleInfo();
+
     bool mbIsSet;
 
     bool mbImuPreintegrated;
 
     std::mutex *mpMutexImu;
+
+    float mnImgRows;
+    float mnImgCols;
 
 public:
     GeometricCamera* mpCamera, *mpCamera2;
@@ -343,7 +348,7 @@ public:
     //Grid for the right image
     std::vector<std::size_t> mGridRight[FRAME_GRID_COLS][FRAME_GRID_ROWS];
 
-    Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timeStamp, ORBextractor* extractorLeft, ORBextractor* extractorRight, ORBVocabulary* voc, cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth, GeometricCamera* pCamera, GeometricCamera* pCamera2, Sophus::SE3f& Tlr,Frame* pPrevF = static_cast<Frame*>(NULL), const IMU::Calib &ImuCalib = IMU::Calib());
+    Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timeStamp, SIFTVocabulary* voc, cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth, GeometricCamera* pCamera, GeometricCamera* pCamera2, StereoOdometer &odometer, Sophus::SE3f& Tlr,Frame* pPrevF = static_cast<Frame*>(NULL), const IMU::Calib &ImuCalib = IMU::Calib());
 
     //Stereo fisheye
     void ComputeStereoFishEyeMatches();
@@ -369,6 +374,6 @@ public:
     Sophus::SE3<double> T_test;
 };
 
-}// namespace ORB_SLAM
+}// namespace SIFT_SLAM
 
 #endif // FRAME_H

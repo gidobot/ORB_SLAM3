@@ -39,7 +39,7 @@ void BaseMultiEdge<D, E>::constructQuadraticForm()
     double error = this->chi2();
     Eigen::Vector3d rho;
     this->robustKernel()->robustify(error, rho);
-    Matrix<double, D, 1> omega_r = - _information * _error;
+    Eigen::Matrix<double, D, 1> omega_r = - _information * _error;
     omega_r *= rho[1];
     computeQuadraticForm(this->robustInformation(rho), omega_r);
   } else {

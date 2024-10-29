@@ -24,12 +24,13 @@ namespace DBoW2 {
 class FeatureVector: 
   public std::map<NodeId, std::vector<unsigned int> >
 {
-    friend class boost::serialization::access;
-    template<class Archive>
-    void serialize(Archive& ar, const int version)
-    {
-        ar & boost::serialization::base_object<std::map<NodeId, std::vector<unsigned int> > >(*this);
-    }
+
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive& ar, const int version)
+  {
+      ar & boost::serialization::base_object<std::map<NodeId, std::vector<unsigned int> > >(*this);
+  }
 
 public:
 

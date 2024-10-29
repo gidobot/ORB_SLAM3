@@ -1,25 +1,25 @@
 /**
-* This file is part of ORB-SLAM3
+* This file is part of SIFT-SLAM3
 *
 * Copyright (C) 2017-2021 Carlos Campos, Richard Elvira, Juan J. Gómez Rodríguez, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
 * Copyright (C) 2014-2016 Raúl Mur-Artal, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
 *
-* ORB-SLAM3 is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+* SIFT-SLAM3 is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
 * License as published by the Free Software Foundation, either version 3 of the License, or
 * (at your option) any later version.
 *
-* ORB-SLAM3 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
+* SIFT-SLAM3 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
 * the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 * GNU General Public License for more details.
 *
-* You should have received a copy of the GNU General Public License along with ORB-SLAM3.
+* You should have received a copy of the GNU General Public License along with SIFT-SLAM3.
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
 
 #include "LocalMapping.h"
 #include "LoopClosing.h"
-#include "ORBmatcher.h"
+#include "SIFTmatcher.h"
 #include "Optimizer.h"
 #include "Converter.h"
 #include "GeometricTools.h"
@@ -27,7 +27,7 @@
 #include<mutex>
 #include<chrono>
 
-namespace ORB_SLAM3
+namespace SIFT_SLAM3
 {
 
 LocalMapping::LocalMapping(System* pSys, Atlas *pAtlas, const float bMonocular, bool bInertial, const string &_strSeqName):
@@ -407,9 +407,9 @@ void LocalMapping::CreateNewMapPoints()
         }
     }
 
-    float th = 0.6f;
+    float th = 0.9f;
 
-    ORBmatcher matcher(th,false);
+    SIFTmatcher matcher(th,false);
 
     Sophus::SE3<float> sophTcw1 = mpCurrentKeyFrame->GetPose();
     Eigen::Matrix<float,3,4> eigTcw1 = sophTcw1.matrix3x4();
@@ -763,7 +763,7 @@ void LocalMapping::SearchInNeighbors()
     }
 
     // Search matches by projection from current KF in target KFs
-    ORBmatcher matcher;
+    SIFTmatcher matcher;
     vector<MapPoint*> vpMapPointMatches = mpCurrentKeyFrame->GetMapPointMatches();
     for(vector<KeyFrame*>::iterator vit=vpTargetKFs.begin(), vend=vpTargetKFs.end(); vit!=vend; vit++)
     {
@@ -1519,4 +1519,4 @@ KeyFrame* LocalMapping::GetCurrKF()
     return mpCurrentKeyFrame;
 }
 
-} //namespace ORB_SLAM
+} //namespace SIFT_SLAM

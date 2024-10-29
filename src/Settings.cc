@@ -1,18 +1,18 @@
 /**
-* This file is part of ORB-SLAM3
+* This file is part of SIFT-SLAM3
 *
 * Copyright (C) 2017-2021 Carlos Campos, Richard Elvira, Juan J. Gómez Rodríguez, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
 * Copyright (C) 2014-2016 Raúl Mur-Artal, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
 *
-* ORB-SLAM3 is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+* SIFT-SLAM3 is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
 * License as published by the Free Software Foundation, either version 3 of the License, or
 * (at your option) any later version.
 *
-* ORB-SLAM3 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
+* SIFT-SLAM3 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
 * the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 * GNU General Public License for more details.
 *
-* You should have received a copy of the GNU General Public License along with ORB-SLAM3.
+* You should have received a copy of the GNU General Public License along with SIFT-SLAM3.
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
@@ -30,7 +30,7 @@
 
 using namespace std;
 
-namespace ORB_SLAM3 {
+namespace SIFT_SLAM3 {
 
     template<>
     float Settings::readParameter<float>(cv::FileStorage& fSettings, const std::string& name, bool& found, const bool required){
@@ -164,8 +164,8 @@ namespace ORB_SLAM3 {
             cout << "\t-Loaded RGB-D calibration" << endl;
         }
 
-        readORB(fSettings);
-        cout << "\t-Loaded ORB settings" << endl;
+        readSIFT(fSettings);
+        cout << "\t-Loaded SIFT settings" << endl;
         readViewer(fSettings);
         cout << "\t-Loaded viewer settings" << endl;
         readLoadAndSave(fSettings);
@@ -440,14 +440,15 @@ namespace ORB_SLAM3 {
         bf_ = b_ * calibration1_->getParameter(0);
     }
 
-    void Settings::readORB(cv::FileStorage &fSettings) {
+    void Settings::readSIFT(cv::FileStorage &fSettings) {
         bool found;
 
-        nFeatures_ = readParameter<int>(fSettings,"ORBextractor.nFeatures",found);
-        scaleFactor_ = readParameter<float>(fSettings,"ORBextractor.scaleFactor",found);
-        nLevels_ = readParameter<int>(fSettings,"ORBextractor.nLevels",found);
-        initThFAST_ = readParameter<int>(fSettings,"ORBextractor.iniThFAST",found);
-        minThFAST_ = readParameter<int>(fSettings,"ORBextractor.minThFAST",found);
+        nFeatures_ = readParameter<int>(fSettings,"SIFTextractor.nFeatures",found);
+        scaleFactor_ = readParameter<float>(fSettings,"SIFTextractor.scaleFactor",found);
+        maxDim_ = readParameter<int>(fSettings,"SIFTextractor.maxDim",found);
+        nLevels_ = readParameter<int>(fSettings,"SIFTextractor.nLevels",found);
+        initThFAST_ = readParameter<int>(fSettings,"SIFTextractor.iniThFAST",found);
+        minThFAST_ = readParameter<int>(fSettings,"SIFTextractor.minThFAST",found);
     }
 
     void Settings::readViewer(cv::FileStorage &fSettings) {
@@ -550,7 +551,7 @@ namespace ORB_SLAM3 {
             output << " ]" << endl;
         }
 
-        if(settings.sensor_ == System::STEREO || settings.sensor_ == System::IMU_STEREO){
+        if((settings.sensor_ == System::STEREO || settings.sensor_ == System::IMU_STEREO) && settings.cameraType_ !=  Settings::Rectified){
             output << "\t-Camera 2 parameters (";
             if(settings.cameraType_ == Settings::PinHole || settings.cameraType_ ==  Settings::Rectified){
                 output << "Pinhole";
@@ -565,6 +566,7 @@ namespace ORB_SLAM3 {
             output << " ]" << endl;
 
             if(!settings.vPinHoleDistorsion2_.empty()){
+                output << "\nHere 4\n";
                 output << "\t-Camera 1 distortion parameters: [ ";
                 for(float d : settings.vPinHoleDistorsion2_){
                     output << " " << d;
@@ -628,8 +630,9 @@ namespace ORB_SLAM3 {
         }
 
         output << "\t-Features per image: " << settings.nFeatures_ << endl;
-        output << "\t-ORB scale factor: " << settings.scaleFactor_ << endl;
-        output << "\t-ORB number of scales: " << settings.nLevels_ << endl;
+        output << "\t-SIFT scale factor: " << settings.scaleFactor_ << endl;
+        output << "\t-SIFT max dimension: " << settings.maxDim_ << endl;
+        output << "\t-SIFT number of scales: " << settings.nLevels_ << endl;
         output << "\t-Initial FAST threshold: " << settings.initThFAST_ << endl;
         output << "\t-Min FAST threshold: " << settings.minThFAST_ << endl;
 

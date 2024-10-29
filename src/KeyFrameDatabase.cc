@@ -1,18 +1,18 @@
 /**
-* This file is part of ORB-SLAM3
+* This file is part of SIFT-SLAM3
 *
 * Copyright (C) 2017-2021 Carlos Campos, Richard Elvira, Juan J. Gómez Rodríguez, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
 * Copyright (C) 2014-2016 Raúl Mur-Artal, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
 *
-* ORB-SLAM3 is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+* SIFT-SLAM3 is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
 * License as published by the Free Software Foundation, either version 3 of the License, or
 * (at your option) any later version.
 *
-* ORB-SLAM3 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
+* SIFT-SLAM3 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
 * the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 * GNU General Public License for more details.
 *
-* You should have received a copy of the GNU General Public License along with ORB-SLAM3.
+* You should have received a copy of the GNU General Public License along with SIFT-SLAM3.
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
@@ -26,10 +26,10 @@
 
 using namespace std;
 
-namespace ORB_SLAM3
+namespace SIFT_SLAM3
 {
 
-KeyFrameDatabase::KeyFrameDatabase (const ORBVocabulary &voc):
+KeyFrameDatabase::KeyFrameDatabase (const SIFTVocabulary &voc):
     mpVoc(&voc)
 {
     mvInvertedFile.resize(voc.size());
@@ -844,14 +844,14 @@ vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame *F, Map
     return vpRelocCandidates;
 }
 
-void KeyFrameDatabase::SetORBVocabulary(ORBVocabulary* pORBVoc)
+void KeyFrameDatabase::SetSIFTVocabulary(SIFTVocabulary* pSIFTVoc)
 {
-    ORBVocabulary** ptr;
-    ptr = (ORBVocabulary**)( &mpVoc );
-    *ptr = pORBVoc;
+    SIFTVocabulary** ptr;
+    ptr = (SIFTVocabulary**)( &mpVoc );
+    *ptr = pSIFTVoc;
 
     mvInvertedFile.clear();
     mvInvertedFile.resize(mpVoc->size());
 }
 
-} //namespace ORB_SLAM
+} //namespace SIFT_SLAM

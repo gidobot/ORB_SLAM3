@@ -1,23 +1,23 @@
 /**
-* This file is part of ORB-SLAM3
+* This file is part of SIFT-SLAM3
 *
 * Copyright (C) 2017-2021 Carlos Campos, Richard Elvira, Juan J. Gómez Rodríguez, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
 * Copyright (C) 2014-2016 Raúl Mur-Artal, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
 *
-* ORB-SLAM3 is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+* SIFT-SLAM3 is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
 * License as published by the Free Software Foundation, either version 3 of the License, or
 * (at your option) any later version.
 *
-* ORB-SLAM3 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
+* SIFT-SLAM3 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
 * the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 * GNU General Public License for more details.
 *
-* You should have received a copy of the GNU General Public License along with ORB-SLAM3.
+* You should have received a copy of the GNU General Public License along with SIFT-SLAM3.
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef ORB_SLAM3_OPTIMIZABLETYPES_H
-#define ORB_SLAM3_OPTIMIZABLETYPES_H
+#ifndef SIFT_SLAM3_OPTIMIZABLETYPES_H
+#define SIFT_SLAM3_OPTIMIZABLETYPES_H
 
 #include "Thirdparty/g2o/g2o/core/base_unary_edge.h"
 #include <Thirdparty/g2o/g2o/types/types_six_dof_expmap.h>
@@ -27,7 +27,7 @@
 #include <include/CameraModels/GeometricCamera.h>
 
 
-namespace ORB_SLAM3 {
+namespace SIFT_SLAM3 {
 class  EdgeSE3ProjectXYZOnlyPose: public  g2o::BaseUnaryEdge<2, Eigen::Vector2d, g2o::VertexSE3Expmap>{
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -172,7 +172,7 @@ public:
 };
 
 
-class EdgeSim3ProjectXYZ : public  g2o::BaseBinaryEdge<2, Eigen::Vector2d, g2o::VertexSBAPointXYZ, ORB_SLAM3::VertexSim3Expmap>
+class EdgeSim3ProjectXYZ : public  g2o::BaseBinaryEdge<2, Eigen::Vector2d, g2o::VertexSBAPointXYZ, SIFT_SLAM3::VertexSim3Expmap>
 {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -182,7 +182,7 @@ public:
 
     void computeError()
     {
-        const ORB_SLAM3::VertexSim3Expmap* v1 = static_cast<const ORB_SLAM3::VertexSim3Expmap*>(_vertices[1]);
+        const SIFT_SLAM3::VertexSim3Expmap* v1 = static_cast<const SIFT_SLAM3::VertexSim3Expmap*>(_vertices[1]);
         const g2o::VertexSBAPointXYZ* v2 = static_cast<const g2o::VertexSBAPointXYZ*>(_vertices[0]);
 
         Eigen::Vector2d obs(_measurement);
@@ -203,7 +203,7 @@ public:
 
     void computeError()
     {
-        const ORB_SLAM3::VertexSim3Expmap* v1 = static_cast<const ORB_SLAM3::VertexSim3Expmap*>(_vertices[1]);
+        const SIFT_SLAM3::VertexSim3Expmap* v1 = static_cast<const SIFT_SLAM3::VertexSim3Expmap*>(_vertices[1]);
         const g2o::VertexSBAPointXYZ* v2 = static_cast<const g2o::VertexSBAPointXYZ*>(_vertices[0]);
 
         Eigen::Vector2d obs(_measurement);
@@ -216,4 +216,4 @@ public:
 
 }
 
-#endif //ORB_SLAM3_OPTIMIZABLETYPES_H
+#endif //SIFT_SLAM3_OPTIMIZABLETYPES_H

@@ -1,0 +1,38 @@
+version: "3"
+
+networks:
+  ros:
+    driver: bridge
+
+services:
+  # ros-master:
+  #   image: ros:noetic-ros-base
+  #   command: stdbuf -o L roscore
+  #   restart: always
+  #   # network_mode: "host"
+  #   networks:
+  #     - ros
+
+  slam:
+    image: docker:slam-orig
+    build:
+      context: .
+      dockerfile: Dockerfile.slam
+      # args: &args
+        # github_oauth: "${GITHUB_OAUTH}"
+    # depends_on:
+      # - ros-master
+    network_mode: "host"
+    # environment:
+      # - "ROS_PYTHON_LOG_CONFIG_FILE=/python_logging_${ROS_PYTHON_ROSOUT_LOG_LEVEL:-INFO}.conf"
+      # - "ROS_MASTER_URI=http://ros-master:11311"
+    # networks:
+      # - ros
+    volumes:
+      - "/etc/localtime:/etc/localtime:ro"
+      - "../:/knfu-slam:rw"
+      - "/home/gidobot/workspace/data/UWslam_dataset:/data:ro"
+    # devices:
+      # - "/dev/gpiomem:/dev/gpiomem"
+    command: stdbuf -o L /bin/bash
+    restart: always

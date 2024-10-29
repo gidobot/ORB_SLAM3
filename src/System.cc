@@ -1,18 +1,18 @@
 /**
-* This file is part of ORB-SLAM3
+* This file is part of SIFT-SLAM3
 *
 * Copyright (C) 2017-2021 Carlos Campos, Richard Elvira, Juan J. Gómez Rodríguez, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
 * Copyright (C) 2014-2016 Raúl Mur-Artal, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
 *
-* ORB-SLAM3 is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+* SIFT-SLAM3 is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
 * License as published by the Free Software Foundation, either version 3 of the License, or
 * (at your option) any later version.
 *
-* ORB-SLAM3 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
+* SIFT-SLAM3 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
 * the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 * GNU General Public License for more details.
 *
-* You should have received a copy of the GNU General Public License along with ORB-SLAM3.
+* You should have received a copy of the GNU General Public License along with SIFT-SLAM3.
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
@@ -20,6 +20,7 @@
 
 #include "System.h"
 #include "Converter.h"
+#include "StereoOdometer.h"
 #include <thread>
 #include <pangolin/pangolin.h>
 #include <iomanip>
@@ -33,7 +34,7 @@
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/archive/xml_oarchive.hpp>
 
-namespace ORB_SLAM3
+namespace SIFT_SLAM3
 {
 
 Verbose::eLevel Verbose::th = Verbose::VERBOSITY_NORMAL;
@@ -45,8 +46,8 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
 {
     // Output welcome message
     cout << endl <<
-    "ORB-SLAM3 Copyright (C) 2017-2020 Carlos Campos, Richard Elvira, Juan J. Gómez, José M.M. Montiel and Juan D. Tardós, University of Zaragoza." << endl <<
-    "ORB-SLAM2 Copyright (C) 2014-2016 Raúl Mur-Artal, José M.M. Montiel and Juan D. Tardós, University of Zaragoza." << endl <<
+    "SIFT-SLAM3 Copyright (C) 2017-2020 Carlos Campos, Richard Elvira, Juan J. Gómez, José M.M. Montiel and Juan D. Tardós, University of Zaragoza." << endl <<
+    "SIFT-SLAM2 Copyright (C) 2014-2016 Raúl Mur-Artal, José M.M. Montiel and Juan D. Tardós, University of Zaragoza." << endl <<
     "This program comes with ABSOLUTELY NO WARRANTY;" << endl  <<
     "This is free software, and you are welcome to redistribute it" << endl <<
     "under certain conditions. See LICENSE.txt." << endl << endl;
@@ -111,10 +112,10 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
 
     if(mStrLoadAtlasFromFile.empty())
     {
-        //Load ORB Vocabulary
-        cout << endl << "Loading ORB Vocabulary. This could take a while..." << endl;
+        //Load SIFT Vocabulary
+        cout << endl << "Loading SIFT Vocabulary. This could take a while..." << endl;
 
-        mpVocabulary = new ORBVocabulary();
+        mpVocabulary = new SIFTVocabulary();
         bool bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
         if(!bVocLoad)
         {
@@ -133,10 +134,10 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     }
     else
     {
-        //Load ORB Vocabulary
-        cout << endl << "Loading ORB Vocabulary. This could take a while..." << endl;
+        //Load SIFT Vocabulary
+        cout << endl << "Loading SIFT Vocabulary. This could take a while..." << endl;
 
-        mpVocabulary = new ORBVocabulary();
+        mpVocabulary = new SIFTVocabulary();
         bool bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
         if(!bVocLoad)
         {
@@ -194,7 +195,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     //Initialize the Local Mapping thread and launch
     mpLocalMapper = new LocalMapping(this, mpAtlas, mSensor==MONOCULAR || mSensor==IMU_MONOCULAR,
                                      mSensor==IMU_MONOCULAR || mSensor==IMU_STEREO || mSensor==IMU_RGBD, strSequence);
-    mptLocalMapping = new thread(&ORB_SLAM3::LocalMapping::Run,mpLocalMapper);
+    mptLocalMapping = new thread(&SIFT_SLAM3::LocalMapping::Run,mpLocalMapper);
     mpLocalMapper->mInitFr = initFr;
     if(settings_)
         mpLocalMapper->mThFarPoints = settings_->thFarPoints();
@@ -211,7 +212,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     //Initialize the Loop Closing thread and launch
     // mSensor!=MONOCULAR && mSensor!=IMU_MONOCULAR
     mpLoopCloser = new LoopClosing(mpAtlas, mpKeyFrameDatabase, mpVocabulary, mSensor!=MONOCULAR, activeLC); // mSensor!=MONOCULAR);
-    mptLoopClosing = new thread(&ORB_SLAM3::LoopClosing::Run, mpLoopCloser);
+    mptLoopClosing = new thread(&SIFT_SLAM3::LoopClosing::Run, mpLoopCloser);
 
     //Set pointers between threads
     mpTracker->SetLocalMapper(mpLocalMapper);
@@ -327,6 +328,9 @@ Sophus::SE3f System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, 
 
 Sophus::SE3f System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const double &timestamp, const vector<IMU::Point>& vImuMeas, string filename)
 {
+    cerr << "ERROR: RGBD not yet implemented for SIFT." << endl;
+    exit(-1);
+
     if(mSensor!=RGBD  && mSensor!=IMU_RGBD)
     {
         cerr << "ERROR: you called TrackRGBD but input sensor was not set to RGBD." << endl;
@@ -387,7 +391,8 @@ Sophus::SE3f System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const
         for(size_t i_imu = 0; i_imu < vImuMeas.size(); i_imu++)
             mpTracker->GrabImuData(vImuMeas[i_imu]);
 
-    Sophus::SE3f Tcw = mpTracker->GrabImageRGBD(imToFeed,imDepthToFeed,timestamp,filename);
+    // Sophus::SE3f Tcw = mpTracker->GrabImageRGBD(imToFeed,imDepthToFeed,timestamp,filename);
+    Sophus::SE3f Tcw;
 
     unique_lock<mutex> lock2(mMutexState);
     mTrackingState = mpTracker->mState;
@@ -552,7 +557,7 @@ void System::Shutdown()
     }
 
     /*if(mpViewer)
-        pangolin::BindToContext("ORB-SLAM2: Map Viewer");*/
+        pangolin::BindToContext("SIFT-SLAM2: Map Viewer");*/
 
 #ifdef REGISTER_TIMES
     mpTracker->PrintTimeStats();
@@ -592,7 +597,7 @@ void System::SaveTrajectoryTUM(const string &filename)
 
     // For each frame we have a reference keyframe (lRit), the timestamp (lT) and a flag
     // which is true when tracking failed (lbL).
-    list<ORB_SLAM3::KeyFrame*>::iterator lRit = mpTracker->mlpReferences.begin();
+    list<SIFT_SLAM3::KeyFrame*>::iterator lRit = mpTracker->mlpReferences.begin();
     list<double>::iterator lT = mpTracker->mlFrameTimes.begin();
     list<bool>::iterator lbL = mpTracker->mlbLost.begin();
     for(list<Sophus::SE3f>::iterator lit=mpTracker->mlRelativeFramePoses.begin(),
@@ -705,7 +710,7 @@ void System::SaveTrajectoryEuRoC(const string &filename)
 
     // For each frame we have a reference keyframe (lRit), the timestamp (lT) and a flag
     // which is true when tracking failed (lbL).
-    list<ORB_SLAM3::KeyFrame*>::iterator lRit = mpTracker->mlpReferences.begin();
+    list<SIFT_SLAM3::KeyFrame*>::iterator lRit = mpTracker->mlpReferences.begin();
     list<double>::iterator lT = mpTracker->mlFrameTimes.begin();
     list<bool>::iterator lbL = mpTracker->mlbLost.begin();
 
@@ -810,7 +815,7 @@ void System::SaveTrajectoryEuRoC(const string &filename, Map* pMap)
 
     // For each frame we have a reference keyframe (lRit), the timestamp (lT) and a flag
     // which is true when tracking failed (lbL).
-    list<ORB_SLAM3::KeyFrame*>::iterator lRit = mpTracker->mlpReferences.begin();
+    list<SIFT_SLAM3::KeyFrame*>::iterator lRit = mpTracker->mlpReferences.begin();
     list<double>::iterator lT = mpTracker->mlFrameTimes.begin();
     list<bool>::iterator lbL = mpTracker->mlbLost.begin();
 
@@ -925,7 +930,7 @@ void System::SaveTrajectoryEuRoC(const string &filename, Map* pMap)
 
     // For each frame we have a reference keyframe (lRit), the timestamp (lT) and a flag
     // which is true when tracking failed (lbL).
-    list<ORB_SLAM3::KeyFrame*>::iterator lRit = mpTracker->mlpReferences.begin();
+    list<SIFT_SLAM3::KeyFrame*>::iterator lRit = mpTracker->mlpReferences.begin();
     list<double>::iterator lT = mpTracker->mlFrameTimes.begin();
     list<bool>::iterator lbL = mpTracker->mlbLost.begin();
 
@@ -1176,11 +1181,11 @@ void System::SaveKeyFrameTrajectoryEuRoC(const string &filename, Map* pMap)
 
     // For each frame we have a reference keyframe (lRit), the timestamp (lT) and a flag
     // which is true when tracking failed (lbL).
-    list<ORB_SLAM3::KeyFrame*>::iterator lRit = mpTracker->mlpReferences.begin();
+    list<SIFT_SLAM3::KeyFrame*>::iterator lRit = mpTracker->mlpReferences.begin();
     list<double>::iterator lT = mpTracker->mlFrameTimes.begin();
     for(list<cv::Mat>::iterator lit=mpTracker->mlRelativeFramePoses.begin(), lend=mpTracker->mlRelativeFramePoses.end();lit!=lend;lit++, lRit++, lT++)
     {
-        ORB_SLAM3::KeyFrame* pKF = *lRit;
+        SIFT_SLAM3::KeyFrame* pKF = *lRit;
 
         cv::Mat Trw = cv::Mat::eye(4,4,CV_32F);
 
@@ -1229,12 +1234,12 @@ void System::SaveTrajectoryKITTI(const string &filename)
 
     // For each frame we have a reference keyframe (lRit), the timestamp (lT) and a flag
     // which is true when tracking failed (lbL).
-    list<ORB_SLAM3::KeyFrame*>::iterator lRit = mpTracker->mlpReferences.begin();
+    list<SIFT_SLAM3::KeyFrame*>::iterator lRit = mpTracker->mlpReferences.begin();
     list<double>::iterator lT = mpTracker->mlFrameTimes.begin();
     for(list<Sophus::SE3f>::iterator lit=mpTracker->mlRelativeFramePoses.begin(),
         lend=mpTracker->mlRelativeFramePoses.end();lit!=lend;lit++, lRit++, lT++)
     {
-        ORB_SLAM3::KeyFrame* pKF = *lRit;
+        SIFT_SLAM3::KeyFrame* pKF = *lRit;
 
         Sophus::SE3f Trw;
 
@@ -1497,7 +1502,7 @@ bool System::LoadAtlas(int type)
         }
 
         mpAtlas->SetKeyFrameDababase(mpKeyFrameDatabase);
-        mpAtlas->SetORBVocabulary(mpVocabulary);
+        mpAtlas->SetSIFTVocabulary(mpVocabulary);
         mpAtlas->PostLoad();
 
         return true;
@@ -1545,5 +1550,5 @@ string System::CalculateCheckSum(string filename, int type)
     return checksum;
 }
 
-} //namespace ORB_SLAM
+} //namespace SIFT_SLAM
 

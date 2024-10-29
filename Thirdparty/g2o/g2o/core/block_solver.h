@@ -45,11 +45,11 @@ namespace g2o {
   {
     static const int PoseDim = _PoseDim;
     static const int LandmarkDim = _LandmarkDim;
-    typedef Matrix<double, PoseDim, PoseDim> PoseMatrixType;
-    typedef Matrix<double, LandmarkDim, LandmarkDim> LandmarkMatrixType;
-    typedef Matrix<double, PoseDim, LandmarkDim> PoseLandmarkMatrixType;
-    typedef Matrix<double, PoseDim, 1> PoseVectorType;
-    typedef Matrix<double, LandmarkDim, 1> LandmarkVectorType;
+    typedef Eigen::Matrix<double, PoseDim, PoseDim> PoseMatrixType;
+    typedef Eigen::Matrix<double, LandmarkDim, LandmarkDim> LandmarkMatrixType;
+    typedef Eigen::Matrix<double, PoseDim, LandmarkDim> PoseLandmarkMatrixType;
+    typedef Eigen::Matrix<double, PoseDim, 1> PoseVectorType;
+    typedef Eigen::Matrix<double, LandmarkDim, 1> LandmarkVectorType;
 
     typedef SparseBlockMatrix<PoseMatrixType> PoseHessianType;
     typedef SparseBlockMatrix<LandmarkMatrixType> LandmarkHessianType;

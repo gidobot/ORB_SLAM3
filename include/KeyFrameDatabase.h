@@ -1,18 +1,18 @@
 /**
-* This file is part of ORB-SLAM3
+* This file is part of SIFT-SLAM3
 *
 * Copyright (C) 2017-2021 Carlos Campos, Richard Elvira, Juan J. Gómez Rodríguez, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
 * Copyright (C) 2014-2016 Raúl Mur-Artal, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
 *
-* ORB-SLAM3 is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+* SIFT-SLAM3 is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
 * License as published by the Free Software Foundation, either version 3 of the License, or
 * (at your option) any later version.
 *
-* ORB-SLAM3 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
+* SIFT-SLAM3 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
 * the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 * GNU General Public License for more details.
 *
-* You should have received a copy of the GNU General Public License along with ORB-SLAM3.
+* You should have received a copy of the GNU General Public License along with SIFT-SLAM3.
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
@@ -26,7 +26,7 @@
 
 #include "KeyFrame.h"
 #include "Frame.h"
-#include "ORBVocabulary.h"
+#include "SIFTVocabulary.h"
 #include "Map.h"
 
 #include <boost/serialization/base_object.hpp>
@@ -36,7 +36,7 @@
 #include<mutex>
 
 
-namespace ORB_SLAM3
+namespace SIFT_SLAM3
 {
 
 class KeyFrame;
@@ -58,7 +58,7 @@ public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     KeyFrameDatabase(){}
-    KeyFrameDatabase(const ORBVocabulary &voc);
+    KeyFrameDatabase(const SIFTVocabulary &voc);
 
     void add(KeyFrame* pKF);
 
@@ -80,12 +80,12 @@ public:
 
     void PreSave();
     void PostLoad(map<long unsigned int, KeyFrame*> mpKFid);
-    void SetORBVocabulary(ORBVocabulary* pORBVoc);
+    void SetSIFTVocabulary(SIFTVocabulary* pSIFTVoc);
 
 protected:
 
    // Associated vocabulary
-   const ORBVocabulary* mpVoc;
+   const SIFTVocabulary* mpVoc;
 
    // Inverted file
    std::vector<list<KeyFrame*> > mvInvertedFile;
@@ -98,6 +98,6 @@ protected:
 
 };
 
-} //namespace ORB_SLAM
+} //namespace SIFT_SLAM
 
 #endif

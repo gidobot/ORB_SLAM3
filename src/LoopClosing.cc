@@ -1,18 +1,18 @@
 /**
-* This file is part of ORB-SLAM3
+* This file is part of SIFT-SLAM3
 *
 * Copyright (C) 2017-2021 Carlos Campos, Richard Elvira, Juan J. Gómez Rodríguez, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
 * Copyright (C) 2014-2016 Raúl Mur-Artal, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
 *
-* ORB-SLAM3 is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+* SIFT-SLAM3 is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
 * License as published by the Free Software Foundation, either version 3 of the License, or
 * (at your option) any later version.
 *
-* ORB-SLAM3 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
+* SIFT-SLAM3 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
 * the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 * GNU General Public License for more details.
 *
-* You should have received a copy of the GNU General Public License along with ORB-SLAM3.
+* You should have received a copy of the GNU General Public License along with SIFT-SLAM3.
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
@@ -22,19 +22,19 @@
 #include "Sim3Solver.h"
 #include "Converter.h"
 #include "Optimizer.h"
-#include "ORBmatcher.h"
+#include "SIFTmatcher.h"
 #include "G2oTypes.h"
 
 #include<mutex>
 #include<thread>
 
 
-namespace ORB_SLAM3
+namespace SIFT_SLAM3
 {
 
-LoopClosing::LoopClosing(Atlas *pAtlas, KeyFrameDatabase *pDB, ORBVocabulary *pVoc, const bool bFixScale, const bool bActiveLC):
+LoopClosing::LoopClosing(Atlas *pAtlas, KeyFrameDatabase *pDB, SIFTVocabulary *pVoc, const bool bFixScale, const bool bActiveLC):
     mbResetRequested(false), mbResetActiveMapRequested(false), mbFinishRequested(false), mbFinished(true), mpAtlas(pAtlas),
-    mpKeyFrameDB(pDB), mpORBVocabulary(pVoc), mpMatchedKF(NULL), mLastLoopKFid(0), mbRunningGBA(false), mbFinishedGBA(true),
+    mpKeyFrameDB(pDB), mpSIFTVocabulary(pVoc), mpMatchedKF(NULL), mLastLoopKFid(0), mbRunningGBA(false), mbFinishedGBA(true),
     mbStopGBA(false), mpThreadGBA(NULL), mbFixScale(bFixScale), mnFullBAIdx(0), mnLoopNumCoincidences(0), mnMergeNumCoincidences(0),
     mbLoopDetected(false), mbMergeDetected(false), mnLoopNumNotFound(0), mnMergeNumNotFound(0), mbActiveLC(bActiveLC)
 {
@@ -361,7 +361,7 @@ bool LoopClosing::NewDetectCommonRegions()
         return false;
     }
 
-    //cout << "LoopClousure: Checking KF: " << mpCurrentKF->mnId << endl;
+    cout << "LoopClousure: Checking KF: " << mpCurrentKF->mnId << endl;
 
     //Check the last candidates with geometric validation
     // Loop candidates
@@ -582,14 +582,17 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
     int nBoWInliers = 15;
     int nSim3Inliers = 20;
     int nProjMatches = 50;
-    int nProjOptMatches = 80;
+    // int nProjOptMatches = 80;
+    int nProjOptMatches = 60;
 
     set<KeyFrame*> spConnectedKeyFrames = mpCurrentKF->GetConnectedKeyFrames();
 
     int nNumCovisibles = 10;
 
-    ORBmatcher matcherBoW(0.9, true);
-    ORBmatcher matcher(0.75, true);
+    // SIFTmatcher matcherBoW(0.85, true);
+    // SIFTmatcher matcher(0.85, true);
+    SIFTmatcher matcherBoW(0.85);
+    SIFTmatcher matcher(0.85);
 
     // Varibles to select the best numbe
     KeyFrame* pBestMatchedKF;
@@ -604,7 +607,8 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
     vector<int> vnMatchesStage(numCandidates, 0);
 
     int index = 0;
-    //Verbose::PrintMess("BoW candidates: There are " + to_string(vpBowCand.size()) + " possible candidates ", Verbose::VERBOSITY_DEBUG);
+    // Verbose::PrintMess("BoW candidates: There are " + to_string(vpBowCand.size()) + " possible candidates ", Verbose::VERBOSITY_DEBUG);
+    // cout << "BoW candidates: There are " + to_string(vpBowCand.size()) + " possible candidates\n" << endl;
     for(KeyFrame* pKFi : vpBowCand)
     {
         if(!pKFi || pKFi->isBad())
@@ -615,7 +619,7 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
         std::vector<KeyFrame*> vpCovKFi = pKFi->GetBestCovisibilityKeyFrames(nNumCovisibles);
         if(vpCovKFi.empty())
         {
-            std::cout << "Covisible list empty" << std::endl;
+            // std::cout << "Covisible list empty" << std::endl;
             vpCovKFi.push_back(pKFi);
         }
         else
@@ -636,10 +640,10 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
         }
         if(bAbortByNearKF)
         {
-            //std::cout << "Check BoW aborted because is close to the matched one " << std::endl;
+            // std::cout << "Check BoW aborted because is close to the matched one " << std::endl;
             continue;
         }
-        //std::cout << "Check BoW continue because is far to the matched one " << std::endl;
+        // std::cout << "Check BoW continue because is far to the matched one " << std::endl;
 
 
         std::vector<std::vector<MapPoint*> > vvpMatchedMPs;
@@ -688,6 +692,7 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
 
         //pMostBoWMatchesKF = vpCovKFi[pMostBoWMatchesKF];
 
+        // cout << "numBoWMatches: " << numBoWMatches << endl;
         if(numBoWMatches >= nBoWMatches) // TODO pick a good threshold
         {
             // Geometric validation
@@ -707,20 +712,22 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
             {
                 mTcm = solver.iterate(20,bNoMore, vbInliers, nInliers, bConverge);
                 //Verbose::PrintMess("BoW guess: Solver achieve " + to_string(nInliers) + " geometrical inliers among " + to_string(nBoWInliers) + " BoW matches", Verbose::VERBOSITY_DEBUG);
+                // cout << "BoW guess: Solver achieve " + to_string(nInliers) + " geometrical inliers among " + to_string(nBoWInliers) + " BoW matches" << endl;
             }
 
             if(bConverge)
             {
-                //std::cout << "Check BoW: SolverSim3 converged" << std::endl;
+                // std::cout << "Check BoW: SolverSim3 converged" << std::endl;
 
                 //Verbose::PrintMess("BoW guess: Convergende with " + to_string(nInliers) + " geometrical inliers among " + to_string(nBoWInliers) + " BoW matches", Verbose::VERBOSITY_DEBUG);
+                // cout << "BoW guess: Convergende with " + to_string(nInliers) + " geometrical inliers among " + to_string(nBoWInliers) + " BoW matches" << endl;
                 // Match by reprojection
                 vpCovKFi.clear();
                 vpCovKFi = pMostBoWMatchesKF->GetBestCovisibilityKeyFrames(nNumCovisibles);
                 vpCovKFi.push_back(pMostBoWMatchesKF);
                 set<KeyFrame*> spCheckKFs(vpCovKFi.begin(), vpCovKFi.end());
 
-                //std::cout << "There are " << vpCovKFi.size() <<" near KFs" << std::endl;
+                // std::cout << "There are " << vpCovKFi.size() <<" near KFs" << std::endl;
 
                 set<MapPoint*> spMapPoints;
                 vector<MapPoint*> vpMapPoints;
@@ -741,7 +748,7 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
                     }
                 }
 
-                //std::cout << "There are " << vpKeyFrames.size() <<" KFs which view all the mappoints" << std::endl;
+                // std::cout << "There are " << vpKeyFrames.size() <<" KFs which view all the mappoints" << std::endl;
 
                 g2o::Sim3 gScm(solver.GetEstimatedRotation().cast<double>(),solver.GetEstimatedTranslation().cast<double>(), (double) solver.GetEstimatedScale());
                 g2o::Sim3 gSmw(pMostBoWMatchesKF->GetRotation().cast<double>(),pMostBoWMatchesKF->GetTranslation().cast<double>(),1.0);
@@ -752,8 +759,8 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
                 vpMatchedMP.resize(mpCurrentKF->GetMapPointMatches().size(), static_cast<MapPoint*>(NULL));
                 vector<KeyFrame*> vpMatchedKF;
                 vpMatchedKF.resize(mpCurrentKF->GetMapPointMatches().size(), static_cast<KeyFrame*>(NULL));
-                int numProjMatches = matcher.SearchByProjection(mpCurrentKF, mScw, vpMapPoints, vpKeyFrames, vpMatchedMP, vpMatchedKF, 8, 1.5);
-                //cout <<"BoW: " << numProjMatches << " matches between " << vpMapPoints.size() << " points with coarse Sim3" << endl;
+                int numProjMatches = matcher.SearchByProjection(mpCurrentKF, mScw, vpMapPoints, vpKeyFrames, vpMatchedMP, vpMatchedKF, 10);
+                // cout <<"BoW: " << numProjMatches << " matches between " << vpMapPoints.size() << " points with coarse Sim3" << endl;
 
                 if(numProjMatches >= nProjMatches)
                 {
@@ -765,6 +772,8 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
                         bFixedScale=false;
 
                     int numOptMatches = Optimizer::OptimizeSim3(mpCurrentKF, pKFi, vpMatchedMP, gScm, 10, mbFixScale, mHessian7x7, true);
+                    // cout << "BoW: " << numOptMatches << " matches after optimization" << endl;
+
 
                     if(numOptMatches >= nSim3Inliers)
                     {
@@ -774,7 +783,9 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
 
                         vector<MapPoint*> vpMatchedMP;
                         vpMatchedMP.resize(mpCurrentKF->GetMapPointMatches().size(), static_cast<MapPoint*>(NULL));
-                        int numProjOptMatches = matcher.SearchByProjection(mpCurrentKF, mScw, vpMapPoints, vpMatchedMP, 5, 1.0);
+                        int numProjOptMatches = matcher.SearchByProjection(mpCurrentKF, mScw, vpMapPoints, vpMatchedMP, 10);
+
+                        // cout << "numProjOptMatches: " << numProjOptMatches << endl;
 
                         if(numProjOptMatches >= nProjOptMatches)
                         {
@@ -859,14 +870,16 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
                     }
                 }
             }
-            /*else
+            else
             {
-                Verbose::PrintMess("BoW candidate: it don't match with the current one", Verbose::VERBOSITY_DEBUG);
-            }*/
+                // Verbose::PrintMess("BoW candidate: it don't match with the current one", Verbose::VERBOSITY_DEBUG);
+                // cout << "BoW candidate: it don't match with the current one" << endl;
+            }
         }
         index++;
     }
 
+    // cout << "nBestMatchesReproj: " << nBestMatchesReproj << endl;
     if(nBestMatchesReproj > 0)
     {
         pLastCurrentKF = mpCurrentKF;
@@ -877,6 +890,7 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
         vpMPs = vpBestMapPoints;
         vpMatchedMPs = vpBestMatchedMapPoints;
 
+        // cout << "nNumCoincidences: " << nNumCoincidences << endl;
         return nNumCoincidences >= 3;
     }
     else
@@ -958,10 +972,11 @@ int LoopClosing::FindMatchesByProjection(KeyFrame* pCurrentKF, KeyFrame* pMatche
     }
 
     Sophus::Sim3f mScw = Converter::toSophus(g2oScw);
-    ORBmatcher matcher(0.9, true);
+    // SIFTmatcher matcher(0.9, true);
+    SIFTmatcher matcher(0.9);
 
     vpMatchedMapPoints.resize(pCurrentKF->GetMapPointMatches().size(), static_cast<MapPoint*>(NULL));
-    int num_matches = matcher.SearchByProjection(pCurrentKF, mScw, vpMapPoints, vpMatchedMapPoints, 3, 1.5);
+    int num_matches = matcher.SearchByProjection(pCurrentKF, mScw, vpMapPoints, vpMatchedMapPoints, 10);
 
     return num_matches;
 }
@@ -2114,7 +2129,7 @@ void LoopClosing::CheckObservations(set<KeyFrame*> &spKFsMap1, set<KeyFrame*> &s
 
 void LoopClosing::SearchAndFuse(const KeyFrameAndPose &CorrectedPosesMap, vector<MapPoint*> &vpMapPoints)
 {
-    ORBmatcher matcher(0.8);
+    SIFTmatcher matcher(0.8);
 
     int total_replaces = 0;
 
@@ -2156,7 +2171,7 @@ void LoopClosing::SearchAndFuse(const KeyFrameAndPose &CorrectedPosesMap, vector
 
 void LoopClosing::SearchAndFuse(const vector<KeyFrame*> &vConectedKFs, vector<MapPoint*> &vpMapPoints)
 {
-    ORBmatcher matcher(0.8);
+    SIFTmatcher matcher(0.8);
 
     int total_replaces = 0;
 
@@ -2536,4 +2551,4 @@ bool LoopClosing::isFinished()
 }
 
 
-} //namespace ORB_SLAM
+} //namespace SIFT_SLAM

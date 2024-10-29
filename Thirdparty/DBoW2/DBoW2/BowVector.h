@@ -59,12 +59,13 @@ enum ScoringType
 class BowVector: 
 	public std::map<WordId, WordValue>
 {
-    friend class boost::serialization::access;
-    template<class Archive>
-    void serialize(Archive& ar, const int version)
-    {
-        ar & boost::serialization::base_object<std::map<WordId, WordValue> >(*this);
-    }
+
+	friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive& ar, const int version)
+  {
+      ar & boost::serialization::base_object<std::map<WordId, WordValue> >(*this);
+  }
 
 public:
 

@@ -1,0 +1,70 @@
+%YAML:1.0
+
+#--------------------------------------------------------------------------------------------
+# Camera Parameters. Adjust them!
+#--------------------------------------------------------------------------------------------
+File.version: "1.0"
+
+Camera.type: "Rectified"
+
+# Camera calibration and distortion parameters (OpenCV) 
+Camera1.fx: 1273.7736149594484
+Camera1.fy: 1273.7736149594484
+Camera1.cx: 677.5
+Camera1.cy: 501.0
+
+# Camera1.k1: 0.0
+# Camera1.k2: 0.0
+# Camera1.p1: 0.0
+# Camera1.p2: 0.0
+
+Camera.width: 1355
+Camera.height: 1002
+
+# Camera frames per second 
+Camera.fps: 5
+
+Stereo.b: 0.14182
+
+# Color order of the images (0: BGR, 1: RGB. It is ignored if images are grayscale)
+Camera.RGB: 1
+
+# Close/Far threshold. Baseline times.
+Stereo.ThDepth: 40.0
+
+#--------------------------------------------------------------------------------------------
+# SIFT Parameters
+#--------------------------------------------------------------------------------------------
+
+# SIFT Extractor: Number of features per image
+SIFTextractor.nFeatures: 2000
+
+# SIFT Extractor: Max dimension of image
+SIFTextractor.maxDim: 1200
+
+# SIFT Extractor: Scale factor between levels in the scale pyramid 	
+SIFTextractor.scaleFactor: 2.0
+
+# SIFT Extractor: Number of levels in the scale pyramid	
+SIFTextractor.nLevels: 5
+
+# SIFT Extractor: Fast threshold
+# Image is divided in a grid. At each cell FAST are extracted imposing a minimum response.
+# Firstly we impose iniThFAST. If no corners are detected we impose a lower value minThFAST
+# You can lower these values if your images have low contrast			
+SIFTextractor.iniThFAST: 20
+SIFTextractor.minThFAST: 7
+
+#--------------------------------------------------------------------------------------------
+# Viewer Parameters
+#--------------------------------------------------------------------------------------------
+Viewer.KeyFrameSize: 0.6
+Viewer.KeyFrameLineWidth: 2.0
+Viewer.GraphLineWidth: 1.0
+Viewer.PointSize: 2.0
+Viewer.CameraSize: 0.7
+Viewer.CameraLineWidth: 3.0
+Viewer.ViewpointX: 0.0
+Viewer.ViewpointY: 0.0
+Viewer.ViewpointZ: -10.0
+Viewer.ViewpointF: 2000.0

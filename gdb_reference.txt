@@ -1,0 +1,6 @@
+gdb Debug Commands:
+
+set args /data/sift_vocabulary/SIFTvoc.txt ./Examples/Stereo/UW.yaml /data/stereo/
+break Tracking::UpdateLastFrame
+Tracking::StereoInitialization
+run
