@@ -100,6 +100,8 @@ namespace SIFT_SLAM3 {
         float initThFAST() {return initThFAST_;}
         float minThFAST() {return minThFAST_;}
         float scaleFactor() {return scaleFactor_;}
+        bool useDescnet() {return useDescnet_;}
+        std::string descnetModel() {return descnetModel_;}
 
         float keyFrameSize() {return keyFrameSize_;}
         float keyFrameLineWidth() {return keyFrameLineWidth_;}
@@ -207,6 +209,8 @@ namespace SIFT_SLAM3 {
         float scaleFactor_;
         int nLevels_;
         int initThFAST_, minThFAST_;
+        bool useDescnet_;
+        std::string descnetModel_;
 
         /*
          * Viewer stuff

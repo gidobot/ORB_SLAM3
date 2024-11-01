@@ -83,6 +83,9 @@ ${PROJECT_SOURCE_DIR}
 ${PROJECT_SOURCE_DIR}/include
 ${PROJECT_SOURCE_DIR}/include/CameraModels
 ${PROJECT_SOURCE_DIR}/Thirdparty/Sophus
+${PROJECT_SOURCE_DIR}/Thirdparty/tensorrt-cpp-api/src
+${PROJECT_SOURCE_DIR}/Thirdparty/tensorrt-cpp-api/include
+${PROJECT_SOURCE_DIR}/Thirdparty/tensorrt-cpp-api/include/interfaces
 ${EIGEN3_INCLUDE_DIR}
 ${Pangolin_INCLUDE_DIRS}
 ${OpenCV_INCLUDE_DIRS}
@@ -151,7 +154,10 @@ include/Settings.h)
 
 add_subdirectory(Thirdparty/g2o)
 
+find_package(fmt REQUIRED)
+
 target_link_libraries(${PROJECT_NAME}
+PUBLIC
 ${OpenCV_LIBS}
 ${EIGEN3_LIBS}
 ${Pangolin_LIBRARIES}
@@ -159,6 +165,9 @@ ${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
 ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
 ${PROJECT_SOURCE_DIR}/Thirdparty/CudaSift/lib/libcudasift.so
 ${PROJECT_SOURCE_DIR}/Thirdparty/viso2/lib/libviso2.so
+${PROJECT_SOURCE_DIR}/Thirdparty/DescNet/lib/libdescnet.so
+${PROJECT_SOURCE_DIR}/Thirdparty/tensorrt-cpp-api/lib/libtensorrt_cpp_api.so
+fmt::fmt
 -lboost_serialization
 -lcrypto
 )

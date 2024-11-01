@@ -38,11 +38,16 @@ Matcher_SIFT::Matcher_SIFT(parameters param) : param(param) {
   int devNum = 0;
   InitCuda(devNum); 
 
-  sift_feature = cv::SIFT::create(2000, 3, 0.03, 10, 1.6);
-  InitSiftData(siftdata_c_1, param.num_features, true, true);
-  InitSiftData(siftdata_c_2, param.num_features, true, true);
-  InitSiftData(siftdata_p_1, param.num_features, true, true);
-  InitSiftData(siftdata_p_2, param.num_features, true, true);
+  // sift_feature = cv::SIFT::create(2000, 3, 0.03, 10, 1.6);
+  InitSiftData(siftdata_c_2, param.num_features, true, true, param.use_descnet);
+  InitSiftData(siftdata_p_1, param.num_features, true, true, param.use_descnet);
+  InitSiftData(siftdata_c_1, param.num_features, true, true, param.use_descnet);
+  InitSiftData(siftdata_p_2, param.num_features, true, true, param.use_descnet);
+
+  if (param.use_descnet) {
+    // DescNet init
+    descnet_cls = shared_ptr<descnet::DescNet>(new descnet::DescNet(param.descnet_model));
+  }
 
   // init match ring buffer to zero
   m1p1 = 0; n1p1 = 0;
@@ -206,8 +211,8 @@ void Matcher_SIFT::pushBackCUDA(const cv::Mat& I1, const cv::Mat& I2, const bool
   image_c_1 = I1;
   image_c_2 = I2;
 
-  InitSiftData(siftdata_c_1, param.num_features, true, true);
-  InitSiftData(siftdata_c_2, param.num_features, true, true);
+  InitSiftData(siftdata_c_1, param.num_features, true, true, param.use_descnet);
+  InitSiftData(siftdata_c_2, param.num_features, true, true, param.use_descnet);
 
 #ifdef PROFILING
   std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
@@ -216,6 +221,24 @@ void Matcher_SIFT::pushBackCUDA(const cv::Mat& I1, const cv::Mat& I2, const bool
   computeFeatures(I1, siftdata_c_1);
   if (!I2.empty())
     computeFeatures(I2, siftdata_c_2);
+
+  // Copy current descriptors to previous here so they can be overwritten by descnet
+  if (param.use_descnet) {
+    descriptors_p_1 = descriptors_c_1.clone();
+    descriptors_p_2 = descriptors_c_2.clone();
+    descriptors_c_1 = cv::Mat(siftdata_c_1.numPts, 128, CV_32F);
+    descriptors_c_2 = cv::Mat(siftdata_c_2.numPts, 128, CV_32F);
+#ifdef MANAGEDMEM
+    float *sift_patch1 = siftdata_c_1.m_patch_data;
+    float *sift_patch2 = siftdata_c_2.m_patch_data;
+#else
+    float *sift_patch1 = siftdata_c_1.d_patch_data;
+    float *sift_patch2 = siftdata_c_2.d_patch_data;
+#endif
+    descnet_cls->computeFeaturesCUDA(siftdata_c_1.numPts, sift_patch1, descriptors_c_1);
+    descnet_cls->computeFeaturesCUDA(siftdata_c_2.numPts, sift_patch2, descriptors_c_2);
+  }
+
 
 #ifdef PROFILING
   std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
@@ -996,26 +1019,32 @@ void Matcher_SIFT::copyCUDAFeatures() {
 
   keypoints_p_1 = keypoints_c_1;
   keypoints_p_2 = keypoints_c_2;
-  descriptors_p_1 = descriptors_c_1.clone();
-  descriptors_p_2 = descriptors_c_2.clone();
-
   keypoints_c_1.clear();
   keypoints_c_2.clear();
-  descriptors_c_1 = cv::Mat(siftdata_c_1.numPts, 128, CV_32F);
-  descriptors_c_2 = cv::Mat(siftdata_c_2.numPts, 128, CV_32F);
+
+  if (!param.use_descnet) {
+    descriptors_p_1 = descriptors_c_1.clone();
+    descriptors_p_2 = descriptors_c_2.clone();
+    descriptors_c_1 = cv::Mat(siftdata_c_1.numPts, 128, CV_32F);
+    descriptors_c_2 = cv::Mat(siftdata_c_2.numPts, 128, CV_32F);
+  }
 
   cv::Mat row;
   for (int32_t i=0; i<siftdata_c_1.numPts; i++) {
     keypoints_c_1.push_back(cv::KeyPoint(sift1c[i].xpos, sift1c[i].ypos, sift1c[i].scale, sift1c[i].orientation, 1, (int32_t)log2(sift1c[i].subsampling)));
     // int32_t octave = (int32_t)log2(sift1c[i].subsampling);
-    row = descriptors_c_1.row(i);
-    std::memcpy(row.data, sift1c[i].data, 128*sizeof(float));
+    if (!param.use_descnet) {
+      row = descriptors_c_1.row(i);
+      std::memcpy(row.data, sift1c[i].data, 128*sizeof(float));
+    }
   }
 
   for (int32_t i=0; i<siftdata_c_2.numPts; i++) {
     keypoints_c_2.push_back(cv::KeyPoint(sift2c[i].xpos, sift2c[i].ypos, sift2c[i].scale, sift2c[i].orientation, 1, (int32_t)log2(sift2c[i].subsampling)));
-    row = descriptors_c_2.row(i);
-    std::memcpy(row.data, sift2c[i].data, 128*sizeof(float));
+    if (!param.use_descnet) {
+      row = descriptors_c_2.row(i);
+      std::memcpy(row.data, sift2c[i].data, 128*sizeof(float));
+    }
   }
 }
 
@@ -1490,7 +1519,7 @@ void Matcher_SIFT::matchingBF(SiftData &data1c, SiftData &data2c, SiftData &data
   if (method==0) {
 
     //-- Filter matches using the Lowe's ratio test
-    const float ratio_thresh = 0.95f;
+    const float ratio_thresh = 0.9f;
 
     // match forward/backward
     MatchSiftData(data1p, data1c);
@@ -1532,7 +1561,7 @@ void Matcher_SIFT::matchingBF(SiftData &data1c, SiftData &data2c, SiftData &data
   } else {
 
     //-- Filter matches using the Lowe's ratio test
-    const float ratio_thresh = 0.95f;
+    const float ratio_thresh = 0.9f;
 
     // First do left right consistency matching with current stereo pair for passing on to SLAM
     MatchSiftData(data1c, data2c);

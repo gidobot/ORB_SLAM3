@@ -76,6 +76,10 @@ include_directories(libviso2/src
   ${OpenCV_INCLUDE_DIRS}
   ${CUDA_INCLUDE_DIRS}
   ${PROJECT_SOURCE_DIR}/../CudaSift
+  ${PROJECT_SOURCE_DIR}/../DescNet/include
+  ${PROJECT_SOURCE_DIR}/../tensorrt-cpp-api/src
+  ${PROJECT_SOURCE_DIR}/../tensorrt-cpp-api/include
+  ${PROJECT_SOURCE_DIR}/../tensorrt-cpp-api/include/interfaces
 )
 
 add_library(viso2 SHARED
@@ -86,4 +90,9 @@ set_target_properties(viso2 PROPERTIES
   COMPILE_FLAGS "${EXTRA_CXX_FLAGS}"         
 )
 
-target_link_libraries (viso2 ${OpenCV_LIBS} ${PROJECT_SOURCE_DIR}/../CudaSift/lib/libcudasift.so)
+target_link_libraries(viso2 
+  ${OpenCV_LIBS}
+  ${PROJECT_SOURCE_DIR}/../DescNet/lib/libdescnet.so
+  ${PROJECT_SOURCE_DIR}/../CudaSift/lib/libcudasift.so
+  ${PROJECT_SOURCE_DIR}/../tensorrt-cpp-api/lib/libtensorrt_cpp_api.so
+)

@@ -55,6 +55,9 @@ SIFTextractor.nLevels: 5
 SIFTextractor.iniThFAST: 20
 SIFTextractor.minThFAST: 7
 
+SIFTextractor.useDescnet: 1
+SIFTextractor.descnetModel: descnet.onnx
+
 #--------------------------------------------------------------------------------------------
 # Viewer Parameters
 #--------------------------------------------------------------------------------------------

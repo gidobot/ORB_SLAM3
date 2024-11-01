@@ -47,6 +47,7 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA
 
 #include "../../CudaSift/cudaImage.h"
 #include "../../CudaSift/cudaSift.h"
+#include "../../DescNet/include/descnet.h"
 
 namespace viso2 
 {
@@ -71,6 +72,8 @@ public:
     int32_t num_features;           // number of features to extract
     int32_t max_dim;                // maximum image dimension
     double  f,cu,cv,base;           // calibration (only for match prediction)
+    bool    use_descnet;            // use descnet for feature description
+    std::string    descnet_model;   // descnet model onnx path
 
     // default settings
     parameters () {
@@ -84,6 +87,8 @@ public:
       multi_stage            = 0;
       half_resolution        = 0;
       refinement             = 0;
+      use_descnet            = 0;
+      descnet_model          = "";
     }
   };
 
@@ -342,6 +347,8 @@ private:
   SiftData siftdata_p_2;
   SiftData siftdata_c_1;
   SiftData siftdata_c_2;
+
+  std::shared_ptr<descnet::DescNet> descnet_cls;
 };
 
 }

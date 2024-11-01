@@ -3578,9 +3578,9 @@ void Tracking::SearchLocalPoints()
     if(nToMatch>0)
     {
         SIFTmatcher matcher(0.9);
-        int th = 3;
+        // int th = 3;
         // SIFTmatcher matcher(0.85);
-        // int th = 1;
+        int th = 1;
         if(mSensor==System::RGBD || mSensor==System::IMU_RGBD)
             th=3;
         if(mpAtlas->isImuInitialized())

@@ -449,6 +449,8 @@ namespace SIFT_SLAM3 {
         nLevels_ = readParameter<int>(fSettings,"SIFTextractor.nLevels",found);
         initThFAST_ = readParameter<int>(fSettings,"SIFTextractor.iniThFAST",found);
         minThFAST_ = readParameter<int>(fSettings,"SIFTextractor.minThFAST",found);
+        useDescnet_ = (bool) readParameter<int>(fSettings,"SIFTextractor.useDescnet",found);
+        descnetModel_ = readParameter<std::string>(fSettings,"SIFTextractor.descnetModel",found);
     }
 
     void Settings::readViewer(cv::FileStorage &fSettings) {
@@ -635,6 +637,8 @@ namespace SIFT_SLAM3 {
         output << "\t-SIFT number of scales: " << settings.nLevels_ << endl;
         output << "\t-Initial FAST threshold: " << settings.initThFAST_ << endl;
         output << "\t-Min FAST threshold: " << settings.minThFAST_ << endl;
+        output << "\t-Use DescNet: " << settings.useDescnet_ << endl;
+        output << "\t-DescNet model path: " << settings.descnetModel_ << endl;
 
         return output;
     }

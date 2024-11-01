@@ -70,10 +70,12 @@ public:
     visual_odometer_params_.calib.cu  = fSettings["Camera1.cx"];
     visual_odometer_params_.calib.cv  = fSettings["Camera1.cy"];
     visual_odometer_params_.calib.f   = fSettings["Camera1.fx"];
-    // visual_odometer_params_.base      = float(fSettings["Camera.bf"]) / float(fSettings["Camera.fx"]);
+    // visual_odometer_params_.base   = float(fSettings["Camera.bf"]) / float(fSettings["Camera.fx"]);
     visual_odometer_params_.base      = float(fSettings["Stereo.b"]);
-    visual_odometer_params_.match.num_features = fSettings["SIFTextractor.nFeatures"]; 
-    visual_odometer_params_.match.max_dim = fSettings["SIFTextractor.maxDim"]; 
+    visual_odometer_params_.match.num_features  = fSettings["SIFTextractor.nFeatures"]; 
+    visual_odometer_params_.match.max_dim       = fSettings["SIFTextractor.maxDim"]; 
+    visual_odometer_params_.match.use_descnet   = (bool) int(fSettings["SIFTextractor.useDescnet"]); 
+    visual_odometer_params_.match.descnet_model = fSettings["SIFTextractor.descnetModel"].string(); 
 
     visual_odometer_.reset(new VisualOdometryStereo(visual_odometer_params_));
     first_frame_ = true;
