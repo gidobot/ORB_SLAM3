@@ -17,6 +17,7 @@ docker run --rm -it \
 	-v ~/.tmux.conf:/home/admin/.tmux.conf \
 	-v $PWD/../:/SIFT_SLAM3:rw \
 	-v /mnt/d/UWslam_dataset:/data:ro \
+	-v /mnt/water:/media/water:ro \
 	-v ~/.docker_bash_history:/root/.bash_history \
 	-w /SIFT_SLAM3 \
 	--name SIFT_SLAM3 \

@@ -268,11 +268,11 @@ target_link_libraries(stereo_uw ${PROJECT_NAME})
 # endif()
 
 #Monocular inertial examples
-# set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Monocular-Inertial)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Monocular-Inertial)
 
-# add_executable(mono_inertial_euroc
-#         Examples/Monocular-Inertial/mono_inertial_euroc.cc)
-# target_link_libraries(mono_inertial_euroc ${PROJECT_NAME})
+add_executable(seeker_mono_inertial
+        Examples/Monocular-Inertial/seeker_mono_inertial.cc)
+target_link_libraries(seeker_mono_inertial ${PROJECT_NAME})
 
 # add_executable(mono_inertial_tum_vi
 #         Examples/Monocular-Inertial/mono_inertial_tum_vi.cc)
