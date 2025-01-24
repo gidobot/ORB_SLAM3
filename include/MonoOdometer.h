@@ -50,18 +50,22 @@ public:
   void init(const cv::FileStorage &fSettings, const int camera_id)
   {
     if (camera_id == 1) {
-      visual_odometer_params_.omnidirectional_calib.cx  = fSettings["Camera.cx"];
-      visual_odometer_params_.omnidirectional_calib.cy  = fSettings["Camera.cy"];
-      visual_odometer_params_.omnidirectional_calib.fx  = fSettings["Camera.fx"];
-      visual_odometer_params_.omnidirectional_calib.fy  = fSettings["Camera.fy"];
+      visual_odometer_params_.omnidirectional_calib.cx  = fSettings["Camera1.cx"];
+      visual_odometer_params_.omnidirectional_calib.cy  = fSettings["Camera1.cy"];
+      visual_odometer_params_.omnidirectional_calib.fx  = fSettings["Camera1.fx"];
+      visual_odometer_params_.omnidirectional_calib.fy  = fSettings["Camera1.fy"];
 
       visual_odometer_params_.omnidirectional_calib.width = fSettings["Camera.width"];
       visual_odometer_params_.omnidirectional_calib.width = fSettings["Camera.height"];
 
-      visual_odometer_params_.omnidirectional_calib.k[0] = fSettings["Camera.k1"];
-      visual_odometer_params_.omnidirectional_calib.k[1] = fSettings["Camera.k2"];
-      visual_odometer_params_.omnidirectional_calib.k[2] = fSettings["Camera.k3"];
-      visual_odometer_params_.omnidirectional_calib.k[3] = fSettings["Camera.k4"];
+      // visual_odometer_params_.omnidirectional_calib.k[0] = fSettings["Camera.k1"];
+      // visual_odometer_params_.omnidirectional_calib.k[1] = fSettings["Camera.k2"];
+      // visual_odometer_params_.omnidirectional_calib.k[2] = fSettings["Camera.k3"];
+      // visual_odometer_params_.omnidirectional_calib.k[3] = fSettings["Camera.k4"];
+      visual_odometer_params_.omnidirectional_calib.k[0] = 0.0;
+      visual_odometer_params_.omnidirectional_calib.k[1] = 0.0;
+      visual_odometer_params_.omnidirectional_calib.k[2] = 0.0;
+      visual_odometer_params_.omnidirectional_calib.k[3] = 0.0;
     }
     else if (camera_id == 2) {
       visual_odometer_params_.omnidirectional_calib.cx  = fSettings["Camera2.cx"];
@@ -79,6 +83,9 @@ public:
     }
 
     visual_odometer_params_.match.num_features = fSettings["SIFTextractor.nFeatures"]; 
+    visual_odometer_params_.match.max_dim       = fSettings["SIFTextractor.maxDim"]; 
+    visual_odometer_params_.match.use_descnet   = (bool) int(fSettings["SIFTextractor.useDescnet"]); 
+    visual_odometer_params_.match.descnet_model = fSettings["SIFTextractor.descnetModel"].string(); 
 
     visual_odometer_.reset(new VisualOdometryMonoOmnidirectional(visual_odometer_params_));
   }

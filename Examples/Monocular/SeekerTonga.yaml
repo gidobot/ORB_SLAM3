@@ -8,22 +8,22 @@ File.version: "1.0"
 Camera.type: "PinHole"
 
 # Camera calibration and distortion parameters (OpenCV) 
-Camera1.fx: 1600
-Camera1.fy: 1600
-Camera1.cx: 600
-Camera1.cy: 600
+Camera1.fx: 3061.7462768028895
+Camera1.fy: 3061.7462768028895
+Camera1.cx: 1415.987317475091
+Camera1.cy: 1396.725170240496
 
-Camera1.k1: 0.0
-Camera1.k2: 0.0
-Camera1.p1: 0.0
-Camera1.p2: 0.0
+Camera1.k1: -0.23508455061507549
+Camera1.k2: 0.28956077070402325
+Camera1.p1: 0.0003381456830821402
+Camera1.p2: -0.00067612668558188248
 
 # Camera resolution
 Camera.width: 2816
 Camera.height: 2848
 
-Camera.newWidth: 2816
-Camera.newHeight: 2848
+# Camera.newWidth: 2816
+# Camera.newHeight: 2848
 
 # Camera frames per second 
 Camera.fps: 2
@@ -36,9 +36,9 @@ IMU.T_b_c1: !!opencv-matrix
    rows: 4
    cols: 4
    dt: f
-   data: [1.0, 0.0, 0.0, 0.0,
-          0.0, 1.0, 0.0, 0.0,
-          0.0, 0.0, 1.0, 0.0,
+   data: [0.0, 1.0, 0.0, -0.198,
+          -1.0, 0.0, 0.0, 0.0,
+          0.0, 0.0, 1.0, -0.119,
           0.0, 0.0, 0.0, 1.0]
 
 # IMU noise
@@ -53,7 +53,7 @@ IMU.Frequency: 100.0
 #--------------------------------------------------------------------------------------------
 
 # SIFT Extractor: Number of features per image
-SIFTextractor.nFeatures: 2000
+SIFTextractor.nFeatures: 4000
 
 # SIFT Extractor: Max dimension of image
 SIFTextractor.maxDim: 1200
@@ -71,8 +71,12 @@ SIFTextractor.nLevels: 5
 SIFTextractor.iniThFAST: 20
 SIFTextractor.minThFAST: 7
 
-SIFTextractor.useDescnet: 1
+SIFTextractor.useDescnet: 0
 SIFTextractor.descnetModel: descnet.onnx
+
+# TODO: implement this for stereo
+# SIFTmatcher.epipolarTh: 5.0
+SIFTmatcher.projThresh: 3.0
 
 #--------------------------------------------------------------------------------------------
 # Viewer Parameters
@@ -87,4 +91,6 @@ Viewer.ViewpointX: 0.0
 Viewer.ViewpointY: -0.7
 Viewer.ViewpointZ: -3.5 # -1.8
 Viewer.ViewpointF: 500.0
+# Viewer.imageViewScale: 0.25
+Viewer.imageViewScale: 0.25
 

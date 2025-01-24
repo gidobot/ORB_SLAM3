@@ -1,122 +1,86 @@
 /**
-* This file is part of ORB-SLAM3
+* This file is part of SIFT-SLAM3
 *
 * Copyright (C) 2017-2021 Carlos Campos, Richard Elvira, Juan J. Gómez Rodríguez, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
 * Copyright (C) 2014-2016 Raúl Mur-Artal, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
 *
-* ORB-SLAM3 is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+* SIFT-SLAM3 is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
 * License as published by the Free Software Foundation, either version 3 of the License, or
 * (at your option) any later version.
 *
-* ORB-SLAM3 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
+* SIFT-SLAM3 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
 * the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 * GNU General Public License for more details.
 *
-* You should have received a copy of the GNU General Public License along with ORB-SLAM3.
+* You should have received a copy of the GNU General Public License along with SIFT-SLAM3.
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <string>
-#include <iomanip>
-#include <iostream>
-#include <algorithm>
-#include <fstream>
-#include <chrono>
-#include <ctime>
-#include <sstream>
+#include<iostream>
+#include<algorithm>
+#include<fstream>
+#include<chrono>
 #include <filesystem>
 
-#include <opencv2/core/core.hpp>
+#include<opencv2/core/core.hpp>
 
-#include <System.h>
-#include "ImuTypes.h"
+#include<System.h>
 
 using namespace std;
 namespace fs = std::filesystem;
 
-
 void LoadImages(const string &strImagePath, vector<string> &vstrImages, vector<double> &vTimeStamps);
-
-void LoadIMU(const string &strImuPath, vector<double> &vTimeStamps, vector<cv::Point3f> &vAcc, vector<cv::Point3f> &vGyro);
-
 double get_image_timestamp(const std::string& image_name);
 
-double ttrack_tot = 0;
-int main(int argc, char *argv[])
-{
-
-    if(argc != 5)
+int main(int argc, char **argv)
+{  
+    if(argc != 4)
     {
-        cerr << endl << "Usage: ./seeker_mono_inertial path_to_vocabulary path_to_settings path_to_image_folder path_to_imu_file" << endl;
+        cerr << endl << "Usage: ./seeker_mono path_to_vocabulary path_to_settings path_to_image_folder" << endl;
         return 1;
     }
 
-    // Load sequence:
+    // Load all sequences:
     vector<string> vstrImageFilenames;
     vector<double> vTimestampsCam;
-    vector<cv::Point3f> vAcc, vGyro;
-    vector<double> vTimestampsImu;
     int nImages;
-    int nImu;
-    int first_imu = 0;
 
     int tot_images = 0;
 
     cout << "Loading images...";
-
     string pathSeq(argv[3]);
-    string pathImu(argv[4]);
 
     LoadImages(pathSeq, vstrImageFilenames, vTimestampsCam);
     cout << "LOADED!" << endl;
 
-    cout << "Loading IMU...";
-    LoadIMU(pathImu, vTimestampsImu, vAcc, vGyro);
-    cout << "LOADED!" << endl;
-
     nImages = vstrImageFilenames.size();
     tot_images += nImages;
-    nImu = vTimestampsImu.size();
-
-    if((nImages<=0)||(nImu<=0))
-    {
-        cerr << "ERROR: Failed to load images or IMU" << endl;
-        return 1;
-    }
-
-    // Find first imu to be considered, supposing imu measurements start first
-
-    while(vTimestampsImu[first_imu]<=vTimestampsCam[0])
-        first_imu++;
-    first_imu--; // first imu measurement to be considered
 
     // Vector for tracking time statistics
     vector<float> vTimesTrack;
     vTimesTrack.resize(tot_images);
 
+    cout << endl << "-------" << endl;
     cout.precision(17);
 
-    cout << "Number of images: " << nImages << endl;
-    cout << "Number of IMU measurements: " << nImu << endl;
-    cout << "First imu: " << first_imu << endl;
 
+    int fps = 2;
+    float dT = 1.f/fps;
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
-    SIFT_SLAM3::System SLAM(argv[1],argv[2],SIFT_SLAM3::System::IMU_MONOCULAR, true);
+    SIFT_SLAM3::System SLAM(argv[1],argv[2],SIFT_SLAM3::System::MONOCULAR, true);
     float imageScale = SLAM.GetImageScale();
 
     double t_resize = 0.f;
     double t_track = 0.f;
 
-    int proccIm=0;
     // Main loop
     cv::Mat im;
-    vector<SIFT_SLAM3::IMU::Point> vImuMeas;
-    proccIm = 0;
-    for(int ni=0; ni<nImages; ni++, proccIm++)
+    int proccIm = 0;
+    for(int ni=485; ni<nImages; ni++, proccIm++)
     {
-        // Read image from file
-        im = cv::imread(string(pathSeq) + vstrImageFilenames[ni],cv::IMREAD_UNCHANGED); //CV_LOAD_IMAGE_UNCHANGED);
 
+        // Read image from file
+        im = cv::imread(string(pathSeq) + '/' + vstrImageFilenames[ni],cv::IMREAD_UNCHANGED); //CV_LOAD_IMAGE_UNCHANGED);
         double tframe = vTimestampsCam[ni];
 
         if(im.empty())
@@ -142,27 +106,11 @@ int main(int argc, char *argv[])
 #endif
         }
 
-        // Load imu measurements from previous frame
-        vImuMeas.clear();
-
-        if(ni>0)
-        {
-            // cout << "t_cam " << tframe << endl;
-
-            while(vTimestampsImu[first_imu]<=vTimestampsCam[ni])
-            {
-                vImuMeas.push_back(SIFT_SLAM3::IMU::Point(vAcc[first_imu].x,vAcc[first_imu].y,vAcc[first_imu].z,
-                                                         vGyro[first_imu].x,vGyro[first_imu].y,vGyro[first_imu].z,
-                                                         vTimestampsImu[first_imu]));
-                first_imu++;
-            }
-        }
-
         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 
         // Pass the image to the SLAM system
         // cout << "tframe = " << tframe << endl;
-        SLAM.TrackMonocular(im,tframe,vImuMeas); // TODO change to monocular_inertial
+        SLAM.TrackMonocular(im,tframe); // TODO change to monocular_inertial
 
         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 
@@ -172,8 +120,6 @@ int main(int argc, char *argv[])
 #endif
 
         double ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
-        ttrack_tot += ttrack;
-        // std::cout << "ttrack: " << ttrack << std::endl;
 
         vTimesTrack[ni]=ttrack;
 
@@ -184,26 +130,43 @@ int main(int argc, char *argv[])
         else if(ni>0)
             T = tframe-vTimestampsCam[ni-1];
 
-        if(ttrack<T)
+        //std::cout << "T: " << T << std::endl;
+        //std::cout << "ttrack: " << ttrack << std::endl;
+
+        if(ttrack<T) {
+            //std::cout << "usleep: " << (dT-ttrack) << std::endl;
             usleep((T-ttrack)*1e6); // 1e6
+        }
     }
+
+    // if(seq < num_seq - 1)
+    // {
+    //     string kf_file_submap =  "./SubMaps/kf_SubMap_" + std::to_string(seq) + ".txt";
+    //     string f_file_submap =  "./SubMaps/f_SubMap_" + std::to_string(seq) + ".txt";
+    //     SLAM.SaveTrajectoryEuRoC(f_file_submap);
+    //     SLAM.SaveKeyFrameTrajectoryEuRoC(kf_file_submap);
+
+    //     cout << "Changing the dataset" << endl;
+
+    //     SLAM.ChangeDataset();
+    // }
 
     // Stop all threads
     SLAM.Shutdown();
 
-//     // Save camera trajectory
-//     if (bFileName)
-//     {
-//         const string kf_file =  "kf_" + string(argv[argc-1]) + ".txt";
-//         const string f_file =  "f_" + string(argv[argc-1]) + ".txt";
-//         SLAM.SaveTrajectoryEuRoC(f_file);
-//         SLAM.SaveKeyFrameTrajectoryEuRoC(kf_file);
-//     }
-//     else
-//     {
-//         SLAM.SaveTrajectoryEuRoC("CameraTrajectory.txt");
-//         SLAM.SaveKeyFrameTrajectoryEuRoC("KeyFrameTrajectory.txt");
-//     }
+    // Save camera trajectory
+    // if (bFileName)
+    // {
+    //     const string kf_file =  "kf_" + string(argv[argc-1]) + ".txt";
+    //     const string f_file =  "f_" + string(argv[argc-1]) + ".txt";
+    //     SLAM.SaveTrajectoryEuRoC(f_file);
+    //     SLAM.SaveKeyFrameTrajectoryEuRoC(kf_file);
+    // }
+    // else
+    // {
+    //     SLAM.SaveTrajectoryEuRoC("CameraTrajectory.txt");
+    //     SLAM.SaveKeyFrameTrajectoryEuRoC("KeyFrameTrajectory.txt");
+    // }
 
     return 0;
 }
@@ -229,58 +192,6 @@ void LoadImages(const string &strImagePath, vector<string> &vstrImages, vector<d
     std::sort(vstrImages.begin(), vstrImages.end());
     for (const auto& image : vstrImages) {
         vTimeStamps.push_back(get_image_timestamp(image));
-    }
-}
-
-void LoadIMU(const string &strImuPath, vector<double> &vTimeStamps, vector<cv::Point3f> &vAcc, vector<cv::Point3f> &vGyro)
-{
-    std::ifstream file(strImuPath);
-    if (!file.is_open()) {
-        throw std::runtime_error("Failed to open file: " + strImuPath);
-    }
-
-    vTimeStamps.reserve(5000);
-    vAcc.reserve(5000);
-    vGyro.reserve(5000);
-
-    std::string line;
-
-    // Read the header line and ignore it
-    if (!std::getline(file, line)) {
-        throw std::runtime_error("File is empty or invalid format.");
-    }
-
-    // Read each subsequent line
-    while (std::getline(file, line)) {
-        std::istringstream line_stream(line);
-        std::string cell;
-
-        // Parse timestamp
-        std::getline(line_stream, cell, ',');
-        double timestamp = std::stoll(cell);
-
-        // Parse gyroscope data (w_x, w_y, w_z)
-        std::array<float, 3> gyro{};
-        for (int i = 0; i < 3; ++i) {
-            if (!std::getline(line_stream, cell, ',')) {
-                throw std::runtime_error("Missing gyroscope data in line: " + line);
-            }
-            gyro[i] = std::stod(cell);
-        }
-
-        // Parse acceleration data (a_x, a_y, a_z)
-        std::array<float, 3> accel{};
-        for (int i = 0; i < 3; ++i) {
-            if (!std::getline(line_stream, cell, ',')) {
-                throw std::runtime_error("Missing acceleration data in line: " + line);
-            }
-            accel[i] = std::stod(cell);
-        }
-
-        // Store parsed data into vectors
-        vTimeStamps.push_back(timestamp/1e6);
-        vAcc.push_back(cv::Point3f(accel[0], accel[1], accel[2]));
-        vGyro.push_back(cv::Point3f(gyro[0], gyro[1], gyro[2]));
     }
 }
 

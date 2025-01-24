@@ -33,7 +33,7 @@ namespace SIFT_SLAM3
 {
 
     const float SIFTmatcher::TH_HIGH = 0.9;
-    const float SIFTmatcher::TH_LOW = 0.6;
+    const float SIFTmatcher::TH_LOW = 0.5;
     const int SIFTmatcher::HISTO_LENGTH = 30;
 
     SIFTmatcher::SIFTmatcher(float nnratio, bool checkOri): mfNNratio(nnratio), mbCheckOrientation(checkOri)
@@ -2079,4 +2079,4 @@ namespace SIFT_SLAM3
         return dist;
     }
 
-} //namespace SIFT_SLAM
+} //namespace SIFT_SLAM3

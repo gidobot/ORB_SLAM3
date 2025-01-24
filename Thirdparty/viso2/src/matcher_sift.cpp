@@ -131,6 +131,92 @@ void Matcher_SIFT::copyMatchData(std::vector<cv::KeyPoint> &kpts, cv::Mat &desc,
   matches_cv = cf_matches;
 }
 
+void Matcher_SIFT::pushBackCUDA(const cv::Mat& I1, const bool replace) {
+
+  // image dimensions
+  int32_t width  = I1.cols;
+  int32_t height = I1.rows;
+
+  // sanity check
+  if (width<=0 || height<=0 || I1.empty()) {
+    cerr << "ERROR: Image dimension mismatch!" << endl;
+    return;
+  }
+
+#ifdef PROFILING
+  std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+#endif
+
+  if (replace) {
+    if (I1c)         _mm_free(I1c);
+    if (m1c1)        _mm_free(m1c1);
+    if (I1c_du)      _mm_free(I1c_du);
+    if (I1c_dv)      _mm_free(I1c_dv);
+    if (I1c_du_full) _mm_free(I1c_du_full);
+    if (I1c_dv_full) _mm_free(I1c_dv_full);
+  } else {
+    if (I1p)         _mm_free(I1p);
+    if (m1p1)        _mm_free(m1p1);
+    if (I1p_du)      _mm_free(I1p_du);
+    if (I1p_dv)      _mm_free(I1p_dv);
+    if (I1p_du_full) _mm_free(I1p_du_full);
+    if (I1p_dv_full) _mm_free(I1p_dv_full);
+    FreeSiftData(siftdata_p_1);
+    m1p1 = m1c1; n1p1 = n1c1;
+    I1p         = I1c;
+    I1p_du      = I1c_du;
+    I1p_dv      = I1c_dv;
+    I1p_du_full = I1c_du_full;
+    I1p_dv_full = I1c_dv_full;
+    dims_p[0]   = dims_c[0];
+    dims_p[1]   = dims_c[1];
+    keypoints_p_1 = keypoints_c_1;
+    descriptors_p_1 = descriptors_c_1.clone();
+    image_p_1 = image_c_1.clone();
+    siftdata_p_1 = siftdata_c_1;
+  }
+
+  // set new dims (bytes per line must be multiple of 16)
+  dims_c[0] = width;
+  dims_c[1] = height;
+  image_c_1 = I1;
+
+  InitSiftData(siftdata_c_1, param.num_features, true, true, param.use_descnet);
+
+#ifdef PROFILING
+  std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+#endif
+
+  computeFeatures(I1, siftdata_c_1);
+
+  // Copy current descriptors to previous here so they can be overwritten by descnet
+  if (param.use_descnet) {
+    descriptors_p_1 = descriptors_c_1.clone();
+    descriptors_c_1 = cv::Mat(siftdata_c_1.numPts, 128, CV_32F);
+#ifdef MANAGEDMEM
+    float *sift_patch1 = siftdata_c_1.m_patch_data;
+#else
+    float *sift_patch1 = siftdata_c_1.d_patch_data;
+#endif
+    descnet_cls->computeFeaturesCUDA(siftdata_c_1.numPts, sift_patch1, descriptors_c_1);
+  }
+
+
+#ifdef PROFILING
+  std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
+#endif
+
+  copyCUDAFeatures(false);
+  // std::cout << "Num keypoints : " << siftdata_c_1.numPts << ", " << siftdata_c_2.numPts << std::endl; 
+
+#ifdef PROFILING
+  std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();
+  cout << "Matcher Profiling (Init): " << std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count() << endl;
+  cout << "Matcher Profiling (Compute Features): " << std::chrono::duration_cast<std::chrono::duration<double> >(t3 - t2).count() << endl;
+  cout << "Matcher Profiling (Copy Features): " << std::chrono::duration_cast<std::chrono::duration<double> >(t4 - t3).count() << endl;
+#endif
+}
+
 void Matcher_SIFT::pushBackCUDA(const cv::Mat& I1, const cv::Mat& I2, const bool replace) {
 
   // image dimensions
@@ -219,14 +305,13 @@ void Matcher_SIFT::pushBackCUDA(const cv::Mat& I1, const cv::Mat& I2, const bool
 #endif
 
   computeFeatures(I1, siftdata_c_1);
-  if (!I2.empty())
-    computeFeatures(I2, siftdata_c_2);
+  computeFeatures(I2, siftdata_c_2);
 
   // Copy current descriptors to previous here so they can be overwritten by descnet
   if (param.use_descnet) {
     descriptors_p_1 = descriptors_c_1.clone();
-    descriptors_p_2 = descriptors_c_2.clone();
     descriptors_c_1 = cv::Mat(siftdata_c_1.numPts, 128, CV_32F);
+    descriptors_p_2 = descriptors_c_2.clone();
     descriptors_c_2 = cv::Mat(siftdata_c_2.numPts, 128, CV_32F);
 #ifdef MANAGEDMEM
     float *sift_patch1 = siftdata_c_1.m_patch_data;
@@ -244,7 +329,7 @@ void Matcher_SIFT::pushBackCUDA(const cv::Mat& I1, const cv::Mat& I2, const bool
   std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
 #endif
 
-  copyCUDAFeatures();
+  copyCUDAFeatures(true);
   // std::cout << "Num keypoints : " << siftdata_c_1.numPts << ", " << siftdata_c_2.numPts << std::endl; 
 
 #ifdef PROFILING
@@ -1008,7 +1093,7 @@ uint8_t* Matcher_SIFT::createHalfResolutionImage(uint8_t *I,const int32_t* dims)
   return I_half;
 }
 
-void Matcher_SIFT::copyCUDAFeatures() {
+void Matcher_SIFT::copyCUDAFeatures(const bool isStereo) {
   #ifdef MANAGEDMEM
     SiftPoint *sift1c = siftdata_c_1.m_data;
     SiftPoint *sift2c = siftdata_c_2.m_data;
@@ -1018,15 +1103,19 @@ void Matcher_SIFT::copyCUDAFeatures() {
   #endif
 
   keypoints_p_1 = keypoints_c_1;
-  keypoints_p_2 = keypoints_c_2;
   keypoints_c_1.clear();
-  keypoints_c_2.clear();
+  if (isStereo) {
+    keypoints_c_2.clear();
+    keypoints_p_2 = keypoints_c_2;
+  }
 
   if (!param.use_descnet) {
     descriptors_p_1 = descriptors_c_1.clone();
-    descriptors_p_2 = descriptors_c_2.clone();
     descriptors_c_1 = cv::Mat(siftdata_c_1.numPts, 128, CV_32F);
-    descriptors_c_2 = cv::Mat(siftdata_c_2.numPts, 128, CV_32F);
+    if (isStereo) {
+      descriptors_c_2 = cv::Mat(siftdata_c_2.numPts, 128, CV_32F);
+      descriptors_p_2 = descriptors_c_2.clone();
+    }
   }
 
   cv::Mat row;
@@ -1039,11 +1128,13 @@ void Matcher_SIFT::copyCUDAFeatures() {
     }
   }
 
-  for (int32_t i=0; i<siftdata_c_2.numPts; i++) {
-    keypoints_c_2.push_back(cv::KeyPoint(sift2c[i].xpos, sift2c[i].ypos, sift2c[i].scale, sift2c[i].orientation, 1, (int32_t)log2(sift2c[i].subsampling)));
-    if (!param.use_descnet) {
-      row = descriptors_c_2.row(i);
-      std::memcpy(row.data, sift2c[i].data, 128*sizeof(float));
+  if (isStereo) {
+    for (int32_t i=0; i<siftdata_c_2.numPts; i++) {
+      keypoints_c_2.push_back(cv::KeyPoint(sift2c[i].xpos, sift2c[i].ypos, sift2c[i].scale, sift2c[i].orientation, 1, (int32_t)log2(sift2c[i].subsampling)));
+      if (!param.use_descnet) {
+        row = descriptors_c_2.row(i);
+        std::memcpy(row.data, sift2c[i].data, 128*sizeof(float));
+      }
     }
   }
 }

@@ -52,7 +52,7 @@ public:
 
 public:
 
-    LoopClosing(Atlas* pAtlas, KeyFrameDatabase* pDB, SIFTVocabulary* pVoc,const bool bFixScale, const bool bActiveLC);
+    LoopClosing(const cv::FileStorage &fSettings, Atlas* pAtlas, KeyFrameDatabase* pDB, SIFTVocabulary* pVoc,const bool bFixScale, const bool bActiveLC);
 
     void SetTracker(Tracking* pTracker);
 
@@ -230,6 +230,8 @@ protected:
     vector<double> vdPR_CurrentTime;
     vector<double> vdPR_MatchedTime;
     vector<int> vnPR_TypeRecogn;
+
+    std::shared_ptr<cv::FileStorage> fSettings;
 
     //DEBUG
     string mstrFolderSubTraj;

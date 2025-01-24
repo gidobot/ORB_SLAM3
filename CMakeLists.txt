@@ -100,6 +100,7 @@ src/Tracking.cc
 src/LocalMapping.cc
 src/LoopClosing.cc
 src/SIFTmatcher.cc
+src/CUDAmatcher.cc
 src/FrameDrawer.cc
 src/Converter.cc
 src/MapPoint.cc
@@ -127,6 +128,7 @@ include/Tracking.h
 include/LocalMapping.h
 include/LoopClosing.h
 include/SIFTmatcher.h
+include/CUDAmatcher.h
 include/FrameDrawer.h
 include/Converter.h
 include/MapPoint.h
@@ -215,6 +217,20 @@ add_executable(stereo_uw
         Examples/Stereo/stereo_uw.cc)
 target_link_libraries(stereo_uw ${PROJECT_NAME})
 
+#Monocular inertial examples
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Monocular-Inertial)
+
+add_executable(seeker_mono_inertial
+        Examples/Monocular-Inertial/seeker_mono_inertial.cc)
+target_link_libraries(seeker_mono_inertial ${PROJECT_NAME})
+
+#Monocular examples
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Monocular)
+
+add_executable(seeker_mono
+        Examples/Monocular/seeker_mono.cc)
+target_link_libraries(seeker_mono ${PROJECT_NAME})
+
 # add_executable(stereo_kitti
 #         Examples/Stereo/stereo_kitti.cc)
 # target_link_libraries(stereo_kitti ${PROJECT_NAME})
@@ -268,11 +284,11 @@ target_link_libraries(stereo_uw ${PROJECT_NAME})
 # endif()
 
 #Monocular inertial examples
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Monocular-Inertial)
-
-add_executable(seeker_mono_inertial
-        Examples/Monocular-Inertial/seeker_mono_inertial.cc)
-target_link_libraries(seeker_mono_inertial ${PROJECT_NAME})
+# set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Monocular-Inertial)
+# 
+# add_executable(seeker_mono_inertial
+#         Examples/Monocular-Inertial/seeker_mono_inertial.cc)
+# target_link_libraries(seeker_mono_inertial ${PROJECT_NAME})
 
 # add_executable(mono_inertial_tum_vi
 #         Examples/Monocular-Inertial/mono_inertial_tum_vi.cc)

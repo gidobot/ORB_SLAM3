@@ -276,7 +276,7 @@ Frame::Frame(const cv::Mat &imGray, const cv::Mat &imDepth, const double &timeSt
 }
 
 
-Frame::Frame(const cv::Mat &imGray, const double &timeStamp,SIFTVocabulary* voc, GeometricCamera* pCamera, cv::Mat &distCoef, const float &bf, const float &thDepth, MonoOdometer &odometer, Frame* pPrevF, const IMU::Calib &ImuCalib)
+Frame::Frame(const cv::Mat &imGray, const double &timeStamp, SIFTVocabulary* voc, GeometricCamera* pCamera, cv::Mat &distCoef, const float &bf, const float &thDepth, MonoOdometer &odometer, cv::FileStorage &fSettings, Frame* pPrevF, const IMU::Calib &ImuCalib)
     :mpcpi(NULL),mpSIFTvocabulary(voc),
      mTimeStamp(timeStamp), mK(static_cast<Pinhole*>(pCamera)->toK()), mK_(static_cast<Pinhole*>(pCamera)->toK_()), mDistCoef(distCoef.clone()), mbf(bf), mThDepth(thDepth),
      mImuCalib(ImuCalib), mpImuPreintegrated(NULL),mpPrevFrame(pPrevF),mpImuPreintegratedFrame(NULL), mpReferenceKF(static_cast<KeyFrame*>(NULL)), mbIsSet(false), mbImuPreintegrated(false), mpCamera(pCamera),
@@ -289,7 +289,10 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp,SIFTVocabulary* voc,
     SetScaleInfo();
 
     // Copy keypoints from odometry
-    odometer.copyMatchData(mvKeys, mDescriptors, matchesCircular, matches);
+    // odometer.copyMatchData(mvKeys, mDescriptors, matchesCircular, matches);
+
+    CUDAmatcher cudaMatcher(fSettings, fSettings["SIFTextractor.nFeatures"].operator int(), 0.6, false);
+    cudaMatcher.computeFeaturesCUDA(imGray, mvKeys, mDescriptors);
 
     N = mvKeys.size();
     if(mvKeys.empty())

@@ -165,7 +165,7 @@ public:
   // opencv version
   void pushBack (const cv::Mat& I1, const cv::Mat& I2, const bool replace);
   void pushBackCUDA(const cv::Mat& I1, const cv::Mat& I2, const bool replace);
-  void pushBackCUDA (const cv::Mat& I1, const bool replace) { pushBackCUDA(I1,cv::Mat(),replace); }
+  void pushBackCUDA (const cv::Mat& I1, const bool replace);
 
   // match features currently stored in ring buffer (current and previous frame)
   // input: method ... 0 = flow, 1 = stereo, 2 = quad matching
@@ -197,7 +197,7 @@ public:
   void copyMatchData(std::vector<cv::KeyPoint> &kpts, cv::Mat &desc,
       std::vector<Matcher_SIFT::p_match> &matches_viso, std::vector<cv::DMatch> &matches_cv);
 
-  void copyCUDAFeatures();
+  void copyCUDAFeatures(const bool isStereo=true);
 
 private:
 

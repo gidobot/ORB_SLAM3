@@ -20,6 +20,7 @@
 #include "Tracking.h"
 
 #include "SIFTmatcher.h"
+#include "CUDAmatcher.h"
 #include "FrameDrawer.h"
 #include "Converter.h"
 #include "G2oTypes.h"
@@ -52,7 +53,8 @@ Tracking::Tracking(System *pSys, SIFTVocabulary* pVoc, FrameDrawer *pFrameDrawer
     if(settings){
         newParameterLoader(settings);
 
-        cv::FileStorage fSettings(strSettingPath, cv::FileStorage::READ);
+        // cv::FileStorage fSettings(strSettingPath, cv::FileStorage::READ);
+        fSettings = cv::FileStorage(strSettingPath, cv::FileStorage::READ);
         if(sensor == System::STEREO || sensor == System::IMU_STEREO || sensor == System::RGBD) {
             stereoOdometer.init(fSettings);
         }
@@ -61,7 +63,8 @@ Tracking::Tracking(System *pSys, SIFTVocabulary* pVoc, FrameDrawer *pFrameDrawer
         }
     }
     else{
-        cv::FileStorage fSettings(strSettingPath, cv::FileStorage::READ);
+        // cv::FileStorage fSettings(strSettingPath, cv::FileStorage::READ);
+        fSettings = cv::FileStorage(strSettingPath, cv::FileStorage::READ);
 
         bool b_parse_cam = ParseCamParamFile(fSettings);
         if(!b_parse_cam)
@@ -1595,23 +1598,27 @@ Sophus::SE3f Tracking::GrabImageMonocular(const cv::Mat &im, const double &times
             cvtColor(mImGray,mImGray,cv::COLOR_BGRA2GRAY);
     }
 
-    monoOdometer.processNext(mImGray);
+    // CUDAmatcher cudaMatcher(fSettings, fSettings["SIFTextractor.nFeatures"].operator int(), 0.6, false);
+    // cudaMatcher.computeFeaturesCUDA(mImGray);
+
+    // monoOdometer.processNext(mImGray);
 
     if (mSensor == System::MONOCULAR)
     {
+        // TODO: extract 5x more features for initial frame
         if(mState==NOT_INITIALIZED || mState==NO_IMAGES_YET ||(lastID - initID) < mMaxFrames)
-            mCurrentFrame = Frame(mImGray,timestamp,mpSIFTVocabulary,mpCamera,mDistCoef,mbf,mThDepth,monoOdometer);
+            mCurrentFrame = Frame(mImGray,timestamp,mpSIFTVocabulary,mpCamera,mDistCoef,mbf,mThDepth,monoOdometer, fSettings);
         else
-            mCurrentFrame = Frame(mImGray,timestamp,mpSIFTVocabulary,mpCamera,mDistCoef,mbf,mThDepth,monoOdometer);
+            mCurrentFrame = Frame(mImGray,timestamp,mpSIFTVocabulary,mpCamera,mDistCoef,mbf,mThDepth,monoOdometer, fSettings);
     }
     else if(mSensor == System::IMU_MONOCULAR)
     {
         if(mState==NOT_INITIALIZED || mState==NO_IMAGES_YET)
         {
-            mCurrentFrame = Frame(mImGray,timestamp,mpSIFTVocabulary,mpCamera,mDistCoef,mbf,mThDepth,monoOdometer,&mLastFrame,*mpImuCalib);
+            mCurrentFrame = Frame(mImGray,timestamp,mpSIFTVocabulary,mpCamera,mDistCoef,mbf,mThDepth,monoOdometer,fSettings,&mLastFrame,*mpImuCalib);
         }
         else
-            mCurrentFrame = Frame(mImGray,timestamp,mpSIFTVocabulary,mpCamera,mDistCoef,mbf,mThDepth,monoOdometer,&mLastFrame,*mpImuCalib);
+            mCurrentFrame = Frame(mImGray,timestamp,mpSIFTVocabulary,mpCamera,mDistCoef,mbf,mThDepth,monoOdometer,fSettings,&mLastFrame,*mpImuCalib);
     }
 
     if (mState==NO_IMAGES_YET)
@@ -1958,40 +1965,54 @@ void Tracking::Track()
                 // Local Mapping might have changed some MapPoints tracked in last frame
                 CheckReplacedInLastFrame();
 
-                  // if(!mbVelocity || (mSensor==System::STEREO && stereoOdometer.isLost())
-                  //   || (mSensor==System::MONOCULAR && monoOdometer.isLost()) || mCurrentFrame.mnId<mnLastRelocFrameId+2)
-                  // {
-                  //   bOK = TrackReferenceKeyFrame();
-                  // }
-                  // else
-                  // {
-                  //   cout << "Here 1\n";
-                  //   // bOK = TrackWithOdometryDirect();
-                  //   // bOK = TrackWithMotionModel();
-                  //   bOK = TrackWithOdometry();
-                  //   if(!bOK)
-                  //     bOK = TrackReferenceKeyFrame();
-                  //     // bOK = TrackWithOdometryDirect();
-                  // }
+              // if(!mbVelocity || (mSensor==System::STEREO && stereoOdometer.isLost())
+              //   || (mSensor==System::MONOCULAR && monoOdometer.isLost()) || mCurrentFrame.mnId<mnLastRelocFrameId+2)
+              // {
+              //   bOK = TrackReferenceKeyFrame();
+              // }
+              // else
+              // {
+              //   // bOK = TrackWithOdometryDirect();
+              //   // bOK = TrackWithMotionModel();
+              //   bOK = TrackWithOdometry();
+              //   if(!bOK)
+              //     bOK = TrackReferenceKeyFrame();
+              //     // bOK = TrackWithOdometryDirect();
+              // }
+
 
                 if((!mbVelocity && !pCurrentMap->isImuInitialized()) || mCurrentFrame.mnId<mnLastRelocFrameId+2)
                 {
-                    if ((mSensor==System::STEREO && stereoOdometer.isLost()) || (mSensor==System::MONOCULAR && monoOdometer.isLost()))
-                    {
-                        Verbose::PrintMess("TRACK: Track with respect to the reference KF ", Verbose::VERBOSITY_DEBUG);
-                        bOK = TrackReferenceKeyFrame();
-                    }
-                    else {
-                        cout << "Here 1\n";
-                        Verbose::PrintMess("TRACK: Track with odometer ", Verbose::VERBOSITY_DEBUG);
-                        bOK = TrackWithOdometry();
-                        if(!bOK)
+                    if (mSensor==System::STEREO)
+                    {   
+                        if (stereoOdometer.isLost())
+                        {
+                            Verbose::PrintMess("TRACK: Track with respect to the reference KF ", Verbose::VERBOSITY_DEBUG);
                             bOK = TrackReferenceKeyFrame();
+                        }
+                        else {
+                            Verbose::PrintMess("TRACK: Track with odometer ", Verbose::VERBOSITY_DEBUG);
+                            bOK = TrackWithOdometry();
+                            if(!bOK)
+                                bOK = TrackReferenceKeyFrame();
+                        }
                     }
+                    else
+                        // bOK = TrackReferenceKeyFrame();
+                        bOK = TrackReferenceKeyFrameMonocular();
                 }
                 else
                 {
-                    if ((mSensor==System::STEREO && stereoOdometer.isLost()) || (mSensor==System::MONOCULAR && monoOdometer.isLost()))
+                    if (mSensor==System::MONOCULAR)
+                    {
+                        Verbose::PrintMess("TRACK: Track with motion model", Verbose::VERBOSITY_DEBUG);
+                        bOK = TrackReferenceKeyFrameMonocular();
+                        // bOK = TrackWithMotionModel();
+                        // if(!bOK)
+                            // bOK = TrackReferenceKeyFrame();
+                            // bOK = TrackReferenceKeyFrameMonocular();
+                    }
+                    else if ((mSensor==System::STEREO && stereoOdometer.isLost()))
                     {
                         Verbose::PrintMess("TRACK: Track with motion model", Verbose::VERBOSITY_DEBUG);
                         bOK = TrackWithMotionModel();
@@ -2000,7 +2021,6 @@ void Tracking::Track()
                     }
                     else {
                         Verbose::PrintMess("TRACK: Track with odometer ", Verbose::VERBOSITY_DEBUG);
-                        cout << "Here 3\n";
                         bOK = TrackWithOdometry();
                         if(!bOK) {
                             bOK = TrackWithMotionModel();
@@ -2179,13 +2199,13 @@ void Tracking::Track()
         {
             if(bOK)
             {
-                cout << "Tracking local map\n";
+                // cout << "Tracking local map\n";
                 bOK = TrackLocalMap();
 
             }
             if(!bOK)
                 cout << "Fail to track local map!" << endl;
-            cout << "Done tracking local map\n";
+            // cout << "Done tracking local map\n";
         }
         else
         {
@@ -2304,7 +2324,10 @@ void Tracking::Track()
             // if(bNeedKF && bOK)
             if(bNeedKF && (bOK || (mInsertKFsLost && mState==RECENTLY_LOST &&
                                    (mSensor == System::IMU_MONOCULAR || mSensor == System::IMU_STEREO || mSensor == System::IMU_RGBD))))
+            {
+                cout << "Create new keyframe\n";
                 CreateNewKeyFrame();
+            }
 
 #ifdef REGISTER_TIMES
             std::chrono::steady_clock::time_point time_EndNewKF = std::chrono::steady_clock::now();
@@ -2529,7 +2552,6 @@ void Tracking::MonocularInitialization()
         // Set Reference Frame
         if(mCurrentFrame.mvKeys.size()>100)
         {
-
             mInitialFrame = Frame(mCurrentFrame);
             mLastFrame = Frame(mCurrentFrame);
             mvbPrevMatched.resize(mCurrentFrame.mvKeysUn.size());
@@ -2565,8 +2587,20 @@ void Tracking::MonocularInitialization()
 
         // Find correspondences
         // SIFTmatcher matcher(0.9,true);
-        SIFTmatcher matcher(0.9);
-        int nmatches = matcher.SearchForInitialization(mInitialFrame,mCurrentFrame,mvbPrevMatched,mvIniMatches,100);
+        // int nmatches = matcher.SearchForInitialization(mInitialFrame,mCurrentFrame,mvbPrevMatched,mvIniMatches,100);
+
+        std::vector<cv::DMatch> matches, inliers;
+        CUDAmatcher cudaMatcher(fSettings, fSettings["SIFTextractor.nFeatures"].operator int(), 0.6, false);
+        cudaMatcher.matchCUDA(mInitialFrame.mvKeysUn, mInitialFrame.mDescriptors, mCurrentFrame.mvKeysUn, mCurrentFrame.mDescriptors, matches, 0.9, true);
+        cudaMatcher.findInliers(mInitialFrame.mvKeysUn, mCurrentFrame.mvKeysUn, matches, inliers);
+        int nmatches = inliers.size();
+
+        //Update prev matched
+        mvIniMatches = vector<int>(mInitialFrame.mvKeysUn.size(),-1);
+        for(size_t i=0, iend=inliers.size(); i<iend; i++) {
+            mvIniMatches[inliers[i].queryIdx] = inliers[i].trainIdx;
+            mvbPrevMatched[inliers[i].queryIdx] = mCurrentFrame.mvKeysUn[inliers[i].trainIdx].pt;
+        }
 
         // Check if there are enough correspondences
         if(nmatches<100)
@@ -2793,6 +2827,118 @@ void Tracking::CheckReplacedInLastFrame()
     }
 }
 
+bool Tracking::TrackReferenceKeyFrameMonocular()
+{
+    cout << "Track Reference keyframe\n";
+    // Compute Bag of Words vector
+    mCurrentFrame.ComputeBoW();
+
+    // We perform first an SIFT matching with the reference keyframe
+    // If enough matches are found we setup a PnP solver
+    // SIFTmatcher matcher(0.9,true);
+    // SIFTmatcher matcher(0.9);
+
+    // int nmatches = matcher.SearchByBoW(mpReferenceKF,mCurrentFrame,vpMapPointMatches);
+    std::vector<cv::DMatch> matches, inliers;
+    CUDAmatcher cudaMatcher(fSettings, fSettings["SIFTextractor.nFeatures"].operator int(), 0.6, false);
+    cudaMatcher.matchCUDA(mpReferenceKF->mvKeysUn, mpReferenceKF->mDescriptors, mCurrentFrame.mvKeysUn, mCurrentFrame.mDescriptors, matches, 0.9, true);
+    cudaMatcher.findInliers(mpReferenceKF->mvKeysUn, mCurrentFrame.mvKeysUn, matches, inliers);
+    int nmatches = 0;
+
+    // set map point matches
+    vector<MapPoint*> vpMapPointMatches;
+    const vector<MapPoint*> vpMapPointsKF = mpReferenceKF->GetMapPointMatches();
+    vpMapPointMatches = vector<MapPoint*>(mCurrentFrame.N,static_cast<MapPoint*>(NULL));
+    for (size_t i = 0; i < inliers.size(); i++)
+    {
+        MapPoint* pMP = vpMapPointsKF[inliers[i].queryIdx];
+        if (!pMP)
+            continue;
+        if(pMP->isBad())
+            continue;
+        vpMapPointMatches[inliers[i].trainIdx] = pMP;
+        nmatches++;
+    }
+
+    // if(nmatches<15)
+    if(nmatches<30)
+    {
+        // ToDo: make sure local map can be tracked even if no map point matches are found
+        if (mSensor==System::STEREO){
+          cv::Mat deltaT = stereoOdometer.getPoseDelta();
+          Sophus::SE3<float> deltaTSophus =  Converter::toSophus(deltaT);
+          mCurrentFrame.SetPose(deltaTSophus*mLastFrame.GetPose());
+          return true;
+        } else {
+            cout << "TRACK_REF_KF: Less than 30 matches!!\n";
+          return false;
+        }
+    }
+
+    mCurrentFrame.mvpMapPoints = vpMapPointMatches;
+    // mCurrentFrame.SetPose(mLastFrame.GetPose());
+  if (mSensor==System::STEREO && !stereoOdometer.isLost()) {
+    cv::Mat deltaT = stereoOdometer.getPoseDelta();
+    Sophus::SE3<float> deltaTSophus =  Converter::toSophus(deltaT);
+    mCurrentFrame.SetPose(deltaTSophus*mLastFrame.GetPose());
+  }
+  else
+    mCurrentFrame.SetPose(mLastFrame.GetPose());
+
+    //mCurrentFrame.PrintPointDistribution();
+
+
+    // cout << " TrackReferenceKeyFrame mLastFrame.GetPose():  " << mLastFrame.GetPose() << endl;
+    Optimizer::PoseOptimization(&mCurrentFrame);
+
+    // Discard outliers
+    int nmatchesMap = 0;
+    for(int i =0; i<mCurrentFrame.N; i++)
+    {
+        //if(i >= mCurrentFrame.Nleft) break;
+        if(mCurrentFrame.mvpMapPoints[i])
+        {
+            if(mCurrentFrame.mvbOutlier[i])
+            {
+                MapPoint* pMP = mCurrentFrame.mvpMapPoints[i];
+
+                mCurrentFrame.mvpMapPoints[i]=static_cast<MapPoint*>(NULL);
+                mCurrentFrame.mvbOutlier[i]=false;
+                if(i < mCurrentFrame.Nleft){
+                    pMP->mbTrackInView = false;
+                }
+                else{
+                    pMP->mbTrackInViewR = false;
+                }
+                pMP->mbTrackInView = false;
+                pMP->mnLastFrameSeen = mCurrentFrame.mnId;
+                nmatches--;
+            }
+            else if(mCurrentFrame.mvpMapPoints[i]->Observations()>0)
+                nmatchesMap++;
+        }
+    }
+
+    if (nmatches >= 30)
+        return true;
+    else
+    {
+        if (mSensor==System::STEREO && !stereoOdometer.isLost())
+        {
+          cv::Mat deltaT = stereoOdometer.getPoseDelta();
+          Sophus::SE3<float> deltaTSophus =  Converter::toSophus(deltaT);
+          mCurrentFrame.SetPose(deltaTSophus*mLastFrame.GetPose());
+          return true;
+        }
+        else
+        {
+            if (mSensor == System::IMU_MONOCULAR || mSensor == System::IMU_STEREO || mSensor == System::IMU_RGBD)
+                return true;
+            return false;
+        }
+    }
+}
+
 
 bool Tracking::TrackReferenceKeyFrame()
 {
@@ -2866,6 +3012,8 @@ bool Tracking::TrackReferenceKeyFrame()
                 nmatchesMap++;
         }
     }
+
+    cout << "Map matches keyframe: " << nmatches << std::endl;
 
     if (nmatches >= 30)
         return true;
@@ -2962,7 +3110,7 @@ void Tracking::UpdateLastFrame()
 
 bool Tracking::TrackWithOdometry()
 {
-  cout << "Tracking with odometery" << std::endl;
+  // cout << "Tracking with odometery" << std::endl;
   SIFTmatcher matcher(.95);
 
   // Update last frame pose according to its reference keyframe
@@ -3040,7 +3188,7 @@ bool Tracking::TrackWithOdometry()
 
 bool Tracking::TrackWithMotionModel()
 {
-    cout << "Track with motion model\n";
+    // cout << "Track with motion model\n";
     // SIFTmatcher matcher(0.9,true);
     SIFTmatcher matcher(0.9);
 
@@ -3128,6 +3276,8 @@ bool Tracking::TrackWithMotionModel()
         mbVO = nmatchesMap<10;
         return nmatches>20;
     }
+
+    cout << "Map matches motion model: " << nmatchesMap << std::endl;
 
     if (mSensor == System::IMU_MONOCULAR || mSensor == System::IMU_STEREO || mSensor == System::IMU_RGBD)
         return true;
@@ -3314,7 +3464,7 @@ bool Tracking::NeedNewKeyFrame()
 
     bool bNeedToInsertClose;
     // bNeedToInsertClose = (nTrackedClose<100) && (nNonTrackedClose>70);
-    bNeedToInsertClose = (nTrackedClose<0.08*nFeatures) && (nNonTrackedClose>60);
+    bNeedToInsertClose = (nTrackedClose<0.1*nFeatures) && (nNonTrackedClose>60);
 
     // Thresholds
     float thRefRatio = 0.75f;
@@ -3330,7 +3480,7 @@ bool Tracking::NeedNewKeyFrame()
     }*/
 
     if(mSensor==System::MONOCULAR)
-        thRefRatio = 0.9f;
+        thRefRatio = 0.99f;
 
     if(mpCamera2) thRefRatio = 0.75f;
 
@@ -3350,8 +3500,10 @@ bool Tracking::NeedNewKeyFrame()
     const bool c1c = mSensor!=System::MONOCULAR && mSensor!=System::IMU_MONOCULAR && mSensor!=System::IMU_STEREO && mSensor!=System::IMU_RGBD && (mnMatchesInliers<nRefMatches*0.25 || bNeedToInsertClose) ;
     // Condition 2: Few tracked points compared to reference keyframe. Lots of visual odometry compared to map matches.
     const bool c2 = (((mnMatchesInliers<nRefMatches*thRefRatio || bNeedToInsertClose)) && mnMatchesInliers>15);
+    // const bool c2 = (((mnMatchesInliers<nRefMatches*thRefRatio || bNeedToInsertClose) || mSensor==System::MONOCULAR) && mnMatchesInliers>15);
 
-    //std::cout << "NeedNewKF: c1a=" << c1a << "; c1b=" << c1b << "; c1c=" << c1c << "; c2=" << c2 << std::endl;
+    // std::cout << "NeedNewKF: c1a=" << c1a << "; c1b=" << c1b << "; c1c=" << c1c << "; c2=" << c2 << std::endl;
+
     // Temporal condition for Inertial cases
     bool c3 = false;
     if(mpLastKeyFrame)
@@ -3394,7 +3546,7 @@ bool Tracking::NeedNewKeyFrame()
             }
             else
             {
-                //std::cout << "NeedNewKeyFrame: localmap is busy" << std::endl;
+                // std::cout << "NeedNewKeyFrame: localmap is busy" << std::endl;
                 return false;
             }
         }
@@ -4129,7 +4281,8 @@ vector<MapPoint*> Tracking::GetLocalMapMPS()
 
 void Tracking::ChangeCalibration(const string &strSettingPath)
 {
-    cv::FileStorage fSettings(strSettingPath, cv::FileStorage::READ);
+    // cv::FileStorage fSettings(strSettingPath, cv::FileStorage::READ);
+    fSettings = cv::FileStorage(strSettingPath, cv::FileStorage::READ);
     float fx = fSettings["Camera.fx"];
     float fy = fSettings["Camera.fy"];
     float cx = fSettings["Camera.cx"];

@@ -37,6 +37,7 @@
 #include "Settings.h"
 #include "StereoOdometer.h"
 #include "MonoOdometer.h"
+#include "CUDAmatcher.h"
 
 #include "GeometricCamera.h"
 
@@ -210,6 +211,7 @@ protected:
 
     void CheckReplacedInLastFrame();
     bool TrackReferenceKeyFrame();
+    bool TrackReferenceKeyFrameMonocular();
     void UpdateLastFrame();
     bool TrackWithMotionModel();
     bool PredictStateIMU();
@@ -285,6 +287,9 @@ protected:
 
     //Atlas
     Atlas* mpAtlas;
+
+    // file settings
+    cv::FileStorage fSettings;
 
     //Calibration matrix
     cv::Mat mK;
