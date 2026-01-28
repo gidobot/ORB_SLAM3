@@ -217,6 +217,14 @@ add_executable(stereo_uw
         Examples/Stereo/stereo_uw.cc)
 target_link_libraries(stereo_uw ${PROJECT_NAME})
 
+add_executable(stereo_capedon
+        Examples/Stereo/stereo_capedon.cc)
+target_link_libraries(stereo_capedon ${PROJECT_NAME})
+
+add_executable(stereo_seeker
+        Examples/Stereo/stereo_seeker.cc)
+target_link_libraries(stereo_seeker ${PROJECT_NAME})
+
 #Monocular inertial examples
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Monocular-Inertial)
 

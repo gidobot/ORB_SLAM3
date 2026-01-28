@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
     for(int ni=0; ni<nImages; ni++, proccIm++)
     {
         // Read image from file
-        im = cv::imread(string(pathSeq) + vstrImageFilenames[ni],cv::IMREAD_UNCHANGED); //CV_LOAD_IMAGE_UNCHANGED);
+        im = cv::imread(string(pathSeq) + '/' + vstrImageFilenames[ni],cv::IMREAD_UNCHANGED); //CV_LOAD_IMAGE_UNCHANGED);
 
         double tframe = vTimestampsCam[ni];
 

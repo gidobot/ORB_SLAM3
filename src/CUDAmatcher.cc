@@ -60,31 +60,32 @@ namespace SIFT_SLAM3
   int CUDAmatcher::SearchByBF(KeyFrame *pKF, Frame &F, std::vector<MapPoint*> &vpMapPointMatches)
   {
     std::vector<cv::DMatch> matches, inliers;
-    matchCUDA(pKF->mvKeysUn, pKF->mDescriptors, F.mvKeysUn, F.mDescriptors, matches, 0.9, true);
-    findInliers(pKF->mvKeysUn, F.mvKeysUn, matches, inliers);
+    matchCUDA(pKF->mvKeysUn, pKF->mDescriptors, F.mvKeysUn, F.mDescriptors, matches, 0.99, true);
+    // findInliers(pKF->mvKeysUn, F.mvKeysUn, matches, inliers);
     int nmatches = 0;
 
     // set map point matches
     const vector<MapPoint*> vpMapPointsKF = pKF->GetMapPointMatches();
     vpMapPointMatches = vector<MapPoint*>(F.N,static_cast<MapPoint*>(NULL));
-    for (size_t i = 0; i < inliers.size(); i++)
+    for (size_t i = 0; i < matches.size(); i++)
     {
-        MapPoint* pMP = vpMapPointsKF[inliers[i].queryIdx];
+        MapPoint* pMP = vpMapPointsKF[matches[i].queryIdx];
         if (!pMP)
             continue;
         if(pMP->isBad())
             continue;
-        vpMapPointMatches[inliers[i].trainIdx] = pMP;
+        vpMapPointMatches[matches[i].trainIdx] = pMP;
         nmatches++;
     }
 
     return nmatches;
   }
 
-  int CUDAmatcher::SearchByBF(KeyFrame *pKF1, KeyFrame *pKF2, std::vector<MapPoint*> &vpMatches12)
+  int CUDAmatcher::SearchByBF(KeyFrame *pKF1, KeyFrame *pKF2, std::vector<MapPoint*> &vpMatches12, std::vector<cv::DMatch> &inliers)
   {
-    std::vector<cv::DMatch> matches, inliers;
-    matchCUDA(pKF1->mvKeysUn, pKF1->mDescriptors, pKF2->mvKeysUn, pKF2->mDescriptors, matches, 0.9, true);
+    // std::vector<cv::DMatch> matches;
+    matchCUDA(pKF1->mvKeysUn, pKF1->mDescriptors, pKF2->mvKeysUn, pKF2->mDescriptors, inliers, 0.99, true);
+    // cout << "Num LC bf matches: " << inliers.size() << endl;
     // findInliers(pKF1->mvKeysUn, pKF2->mvKeysUn, matches, inliers);
     int nmatches = 0;
 
@@ -94,7 +95,7 @@ namespace SIFT_SLAM3
     vpMatches12 = vector<MapPoint*>(vpMapPoints1.size(),static_cast<MapPoint*>(NULL));
     vector<bool> vbMatched2(vpMapPoints2.size(),false);
 
-    for (size_t i = 0; i < matches.size(); i++)
+    for (size_t i = 0; i < inliers.size(); i++)
     {
         // MapPoint* pMP1 = vpMapPoints1[inliers[i].queryIdx];
         // if (!pMP1)
@@ -102,18 +103,31 @@ namespace SIFT_SLAM3
         // if(pMP1->isBad())
             // continue;
 
-        MapPoint* pMP2 = vpMapPoints2[matches[i].trainIdx];
+        MapPoint* pMP2 = vpMapPoints2[inliers[i].trainIdx];
         if (!pMP2)
             continue;
         if(pMP2->isBad())
             continue;
 
-        vpMatches12[matches[i].queryIdx] = pMP2;
+        vpMatches12[inliers[i].queryIdx] = pMP2;
         nmatches++;
     }
 
     return nmatches;
   }
+
+  void CUDAmatcher::plotmatches(const std::vector<cv::KeyPoint> &kpts1, const std::vector<cv::KeyPoint> &kpts2,
+    const std::vector<cv::DMatch> &matches, const cv::Mat &img1, const cv::Mat &img2)
+  {
+    cv::Mat img_matches;
+    cv::drawMatches(img1, kpts1, img2, kpts2, matches, img_matches,
+      cv::Scalar::all(-1), cv::Scalar::all(-1), std::vector<char>(), cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
+    cv::namedWindow("matches", cv::WINDOW_NORMAL);
+    cv::imshow("matches", img_matches);
+    cv::waitKey(0);
+  }
+
+
 
   double CUDAmatcher::matchCUDA(const std::vector<cv::KeyPoint> &kpts1, const cv::Mat &desc1,
     const std::vector<cv::KeyPoint> &kpts2, const cv::Mat &desc2, std::vector<cv::DMatch> &matches,

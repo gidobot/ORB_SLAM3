@@ -29,13 +29,16 @@ namespace SIFT_SLAM3
   		~CUDAmatcher();
 
   		int SearchByBF(KeyFrame *pKF, Frame &F, std::vector<MapPoint*> &vpMapPointMatches);
-        int SearchByBF(KeyFrame *pKF1, KeyFrame *pKF2, std::vector<MapPoint*> &vpMatches12);
+  		int SearchByBF(KeyFrame *pKF1, KeyFrame *pKF2, std::vector<MapPoint*> &vpMatches12, std::vector<cv::DMatch> &inliers);
 
   		double computeFeaturesCUDA(const cv::Mat &I, std::vector<cv::KeyPoint> &kpts, cv::Mat &desc);
 
 		double matchCUDA(const std::vector<cv::KeyPoint> &kpts1, const cv::Mat &desc1,
 			const std::vector<cv::KeyPoint> &kpts2, const cv::Mat &desc2, std::vector<cv::DMatch> &matches,
 			const float ratio_thresh, const bool cross_check=false);
+
+  		void plotmatches(const std::vector<cv::KeyPoint> &kpts1, const std::vector<cv::KeyPoint> &kpts2,
+    		const std::vector<cv::DMatch> &matches, const cv::Mat &img1, const cv::Mat &img2);
 
 		std::vector<double> findInliers(const std::vector<cv::KeyPoint> &kpts1, const std::vector<cv::KeyPoint> &kpts2, 
 			const std::vector<cv::DMatch> &matches, std::vector<cv::DMatch> &inliers, bool is_fish1=false, bool is_fish2=false);

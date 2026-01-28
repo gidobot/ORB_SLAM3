@@ -503,6 +503,8 @@ protected:
 public:
     GeometricCamera* mpCamera, *mpCamera2;
 
+    cv::Mat imgLeft;
+
     //Indexes of stereo observations correspondences
     std::vector<int> mvLeftToRightMatch, mvRightToLeftMatch;
 

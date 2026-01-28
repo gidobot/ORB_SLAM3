@@ -211,6 +211,7 @@ protected:
 
     void CheckReplacedInLastFrame();
     bool TrackReferenceKeyFrame();
+    bool TrackReferenceKeyFrameBF();
     bool TrackReferenceKeyFrameMonocular();
     void UpdateLastFrame();
     bool TrackWithMotionModel();

@@ -41,6 +41,8 @@ IMU.T_b_c1: !!opencv-matrix
           0.0, 0.0, 1.0, -0.119,
           0.0, 0.0, 0.0, 1.0]
 
+
+
 # IMU noise
 IMU.NoiseGyro: 1.7e-4 #1.6968e-04
 IMU.NoiseAcc: 2.0000e-3 #2.0e-3
@@ -53,7 +55,7 @@ IMU.Frequency: 100.0
 #--------------------------------------------------------------------------------------------
 
 # SIFT Extractor: Number of features per image
-SIFTextractor.nFeatures: 2000
+SIFTextractor.nFeatures: 4000
 
 # SIFT Extractor: Max dimension of image
 SIFTextractor.maxDim: 1200
@@ -74,6 +76,10 @@ SIFTextractor.minThFAST: 7
 SIFTextractor.useDescnet: 0
 SIFTextractor.descnetModel: descnet.onnx
 
+# TODO: implement this for stereo
+# SIFTmatcher.epipolarTh: 5.0
+SIFTmatcher.projThresh: 3.0
+
 #--------------------------------------------------------------------------------------------
 # Viewer Parameters
 #--------------------------------------------------------------------------------------------
@@ -87,4 +93,4 @@ Viewer.ViewpointX: 0.0
 Viewer.ViewpointY: -0.7
 Viewer.ViewpointZ: -3.5 # -1.8
 Viewer.ViewpointF: 500.0
-
+Viewer.imageViewScale: 0.25

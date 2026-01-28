@@ -95,7 +95,7 @@ Frame::Frame(const Frame &frame)
      monoLeft(frame.monoLeft), monoRight(frame.monoRight), mvLeftToRightMatch(frame.mvLeftToRightMatch),
      mvRightToLeftMatch(frame.mvRightToLeftMatch), mvStereo3Dpoints(frame.mvStereo3Dpoints),
      mTlr(frame.mTlr), mRlr(frame.mRlr), mtlr(frame.mtlr), mTrl(frame.mTrl),
-     mTcw(frame.mTcw), mbHasPose(false), mbHasVelocity(false)
+     mTcw(frame.mTcw), mbHasPose(false), mbHasVelocity(false), imgLeft(frame.imgLeft), imgRight(frame.imgRight)
 {
     for(int i=0;i<FRAME_GRID_COLS;i++)
         for(int j=0; j<FRAME_GRID_ROWS; j++){
@@ -133,6 +133,9 @@ Frame::Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timeSt
 
     mnImgRows = imLeft.rows;
     mnImgCols = imLeft.cols;
+
+    // imgLeft = imLeft.clone();
+    // imgRight = imRight.clone();
 
     // Scale Level Info
     SetScaleInfo();
@@ -1037,8 +1040,8 @@ Frame::Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timeSt
          mbHasPose(false), mbHasVelocity(false)
 
 {
-    imgLeft = imLeft.clone();
-    imgRight = imRight.clone();
+    // imgLeft = imLeft.clone();
+    // imgRight = imRight.clone();
 
     // Frame ID
     mnId=nNextId++;

@@ -5,90 +5,68 @@
 #--------------------------------------------------------------------------------------------
 File.version: "1.0"
 
-Camera.type: "PinHole"
+Camera.type: "Rectified"
 
 # Camera calibration and distortion parameters (OpenCV) 
-Camera1.fx: 3061.7462768028895
-Camera1.fy: 3061.7462768028895
-Camera1.cx: 1415.987317475091
-Camera1.cy: 1396.725170240496
+Camera1.fx: 2402.775775
+Camera1.fy: 2402.775775
+Camera1.cx: 1379.364471
+Camera1.cy: 1043.872574
 
-Camera1.k1: -0.23508455061507549
-Camera1.k2: 0.28956077070402325
-Camera1.p1: 0.0003381456830821402
-Camera1.p2: -0.00067612668558188248
-
-# Camera resolution
-Camera.width: 2816
-Camera.height: 2848
-
-# Camera.newWidth: 2816
-# Camera.newHeight: 2848
+Camera.width: 2579
+Camera.height: 2122
 
 # Camera frames per second 
 Camera.fps: 5
 
+Stereo.b: 0.19599429
+
 # Color order of the images (0: BGR, 1: RGB. It is ignored if images are grayscale)
 Camera.RGB: 1
 
-# Transformation from camera to body-frame (imu)
-IMU.T_b_c1: !!opencv-matrix
-   rows: 4
-   cols: 4
-   dt: f
-   data: [0.0, 1.0, 0.0, -0.198,
-          -1.0, 0.0, 0.0, 0.0,
-          0.0, 0.0, 1.0, -0.119,
-          0.0, 0.0, 0.0, 1.0]
-
-# IMU noise
-IMU.NoiseGyro: 1.7e-4 #1.6968e-04
-IMU.NoiseAcc: 2.0000e-3 #2.0e-3
-IMU.GyroWalk: 1.9393e-05 
-IMU.AccWalk: 3.0000e-03 # 3e-03
-IMU.Frequency: 100.0
+# Close/Far threshold. Baseline times.
+Stereo.ThDepth: 40.0
 
 #--------------------------------------------------------------------------------------------
 # SIFT Parameters
 #--------------------------------------------------------------------------------------------
 
 # SIFT Extractor: Number of features per image
-SIFTextractor.nFeatures: 4000
+SIFTextractor.nFeatures: 2000
 
 # SIFT Extractor: Max dimension of image
-SIFTextractor.maxDim: 1200
+SIFTextractor.maxDim: 2000
 
-# SIFT Extractor: Scale factor between levels in the scale pyramid   
+# SIFT Extractor: Scale factor between levels in the scale pyramid 	
 SIFTextractor.scaleFactor: 2.0
 
-# SIFT Extractor: Number of levels in the scale pyramid  
+# SIFT Extractor: Number of levels in the scale pyramid	
 SIFTextractor.nLevels: 5
 
 # SIFT Extractor: Fast threshold
 # Image is divided in a grid. At each cell FAST are extracted imposing a minimum response.
 # Firstly we impose iniThFAST. If no corners are detected we impose a lower value minThFAST
-# You can lower these values if your images have low contrast        
+# You can lower these values if your images have low contrast			
 SIFTextractor.iniThFAST: 20
 SIFTextractor.minThFAST: 7
 
 SIFTextractor.useDescnet: 0
 SIFTextractor.descnetModel: descnet.onnx
 
-# TODO: implement this for stereo
-# SIFTmatcher.epipolarTh: 5.0
-SIFTmatcher.projThresh: 3.0
+SIFTmatcher.dispTolerance: 15.0
+SIFTmatcher.inlierThresh: 5.0
 
 #--------------------------------------------------------------------------------------------
 # Viewer Parameters
 #--------------------------------------------------------------------------------------------
-Viewer.KeyFrameSize: 0.05
-Viewer.KeyFrameLineWidth: 1.0
-Viewer.GraphLineWidth: 0.9
+Viewer.KeyFrameSize: 0.6
+Viewer.KeyFrameLineWidth: 2.0
+Viewer.GraphLineWidth: 1.0
 Viewer.PointSize: 2.0
-Viewer.CameraSize: 0.08
+Viewer.CameraSize: 0.7
 Viewer.CameraLineWidth: 3.0
 Viewer.ViewpointX: 0.0
-Viewer.ViewpointY: -0.7
-Viewer.ViewpointZ: -3.5 # -1.8
-Viewer.ViewpointF: 500.0
+Viewer.ViewpointY: 0.0
+Viewer.ViewpointZ: -10.0
+Viewer.ViewpointF: 2000.0
 Viewer.imageViewScale: 0.25

@@ -19,8 +19,9 @@ docker run --rm -it \
 	-v ~/.docker_bash_history:/home/admin/.bash_history:rw \
 	-v ~/.tmux.conf:/home/admin/.tmux.conf \
 	-v $PWD/../:/SIFT_SLAM3:rw \
-	-v /media/gidobot/data:/data:ro \
+	-v /media/gidobot/Data1:/data:ro \
 	-v /media/water:/media/water:ro \
+	-v /mnt/tmp:/mnt/tmp:ro \
 	-v ~/.docker_bash_history:/root/.bash_history \
 	-w /SIFT_SLAM3 \
 	--name SIFT_SLAM3 \

@@ -148,7 +148,7 @@ vector<double> VisualOdometryStereo::estimateMotion (vector<Matcher_SIFT::p_matc
       }
     }
   }
-  // std::cout << "inliers: " << inliers.size() << std::endl;
+  // std::cout << "Match RANSAC inliers: " << inliers.size() << std::endl;
   // matcher->plotMatches(inliers);
 
   // final optimization (refinement)

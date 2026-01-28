@@ -528,6 +528,7 @@ void Matcher_SIFT::matchFeaturesCUDA(int32_t method, const bool reset, Matrix *T
 
   matchingBF(siftdata_c_1, siftdata_c_2, siftdata_p_1, siftdata_p_2, p_matched_2, cf_matches, method, false, Tr_delta);
 
+  std::cout << "Stereo num matched: " << cf_matches.size() << std::endl;
   // std::cout << "num matched: " << p_matched_2.size() << std::endl;
   // if (param.refinement>0)
     // refinement(p_matched_2,method);
@@ -536,7 +537,7 @@ void Matcher_SIFT::matchFeaturesCUDA(int32_t method, const bool reset, Matrix *T
   // std::cout << "num saved: " << p_matched_2.size() << std::endl;
   // std::vector<int32_t> m;
   // for (int32_t i=0; i<p_matched_2.size(); i++)
-  //   m.push_back(i);
+    // m.push_back(i);
   // plotMatches(m);
 }
 
@@ -764,8 +765,8 @@ void Matcher_SIFT::plotMatches(std::vector<int32_t> matches) {
   cv::drawMatches(image_c_1, kpts_c_1, image_c_2, kpts_c_2, cvmatches, matchImg1, cv::Scalar::all(-1), cv::Scalar::all(-1));
   // cv::drawMatches(image_p_1, keypoints_p_1, image_p_2, keypoints_p_2, cvmatches, matchImg1, cv::Scalar::all(-1), cv::Scalar::all(-1));
   // cv::drawMatches(image_c_1, kpts_c_1, image_p_1, kpts_p_1, cvmatches, matchImg1, cv::Scalar::all(-1), cv::Scalar::all(-1));
-  // cv::namedWindow("Img1", CV_WINDOW_NORMAL);
-  cv::namedWindow("Img1");
+  cv::namedWindow("Img1", cv::WINDOW_NORMAL);
+  // cv::namedWindow("Img1");
   cv::imshow("Img1", matchImg1);
   cv::waitKey(30);
 }
@@ -1169,7 +1170,7 @@ void Matcher_SIFT::computeFeatures(const cv::Mat& I, SiftData &siftdata) {
 
   float initBlur = 1.6f;
   // float thresh = 1.2f; // for stereo
-  float thresh = 1.0f; // for hybrid
+  float thresh = 0.5f; // for hybrid
 
   // float *memoryTmpCUDA = AllocSiftTempMemory(I.cols, I.rows, 5, false);
   // ExtractSift(siftdata, img, 5, initBlur, thresh, 0.0f, false, memoryTmpCUDA);
@@ -1654,9 +1655,6 @@ void Matcher_SIFT::matchingBF(SiftData &data1c, SiftData &data2c, SiftData &data
     //-- Filter matches using the Lowe's ratio test
     const float ratio_thresh = 0.9f;
 
-    // First do left right consistency matching with current stereo pair for passing on to SLAM
-    MatchSiftData(data1c, data2c);
-    MatchSiftData(data2c, data1c);
     #ifdef MANAGEDMEM
       SiftPoint *sift1c = data1c.m_data;
       SiftPoint *sift2c = data2c.m_data;
@@ -1665,12 +1663,17 @@ void Matcher_SIFT::matchingBF(SiftData &data1c, SiftData &data2c, SiftData &data
       SiftPoint *sift2c = data2c.h_data;
     #endif
 
+    // First do left right consistency matching with current stereo pair for passing on to SLAM
+    MatchSiftData(data1c, data2c);
+    MatchSiftData(data2c, data1c);
+
     for (int32_t i1c=0; i1c<data1c.numPts; i1c++) {
       // if (sift1c[i1c].ambiguity > ratio_thresh)
       //   continue;
       i2c = sift1c[i1c].match;
-      if (fabs(sift1c[i1c].match_ypos - sift1c[i1c].ypos) > param.match_disp_tolerance)
+      if (fabs(sift1c[i1c].match_ypos - sift1c[i1c].ypos) > param.match_disp_tolerance) {
         continue;
+      }
       i1c2 = sift2c[i2c].match;
 
       if (i1c == i1c2) {
@@ -1679,9 +1682,12 @@ void Matcher_SIFT::matchingBF(SiftData &data1c, SiftData &data2c, SiftData &data
         u1c = sift1c[i1c].xpos; v1c = sift1c[i1c].ypos;
 
         // if disparities are positive
+        // if (1) {
         if (u1c>=u2c) {
           // add match
           c_matches.push_back(cv::DMatch(i1c, i2c, sift1c[i1c].score));
+        }
+        else {
         }
       }
     }
@@ -1708,8 +1714,9 @@ void Matcher_SIFT::matchingBF(SiftData &data1c, SiftData &data2c, SiftData &data
       // if (sift1p[i1p].ambiguity > ratio_thresh)
       //   continue;
       i2p = sift1p[i1p].match;
-      if (fabs(sift1p[i1p].match_ypos - sift1p[i1p].ypos) > param.match_disp_tolerance)
+      if (fabs(sift1p[i1p].match_ypos - sift1p[i1p].ypos) > param.match_disp_tolerance) {
         continue;
+      }
 
       // if (sift2p[i2p].ambiguity > ratio_thresh)
         // continue;
@@ -1718,8 +1725,9 @@ void Matcher_SIFT::matchingBF(SiftData &data1c, SiftData &data2c, SiftData &data
       // if (sift2c[i2c].ambiguity > ratio_thresh)
       //   continue;
       i1c = sift2c[i2c].match;
-      if (fabs(sift2c[i2c].match_ypos - sift2c[i2c].ypos) > param.match_disp_tolerance)
+      if (fabs(sift2c[i2c].match_ypos - sift2c[i2c].ypos) > param.match_disp_tolerance) {
         continue;
+      }
 
       // if (sift1c[i1c].ambiguity > ratio_thresh)
       //   continue;
@@ -1733,6 +1741,7 @@ void Matcher_SIFT::matchingBF(SiftData &data1c, SiftData &data2c, SiftData &data
         u1p = sift1p[i1p].xpos; v1p = sift1p[i1p].ypos;
 
         // if disparities are positive
+        // if (1) {
         if (u1p>=u2p && u1c>=u2c) {
           // add match
           p_matched.push_back(Matcher_SIFT::p_match(u1p,v1p,i1p,u2p,v2p,i2p,

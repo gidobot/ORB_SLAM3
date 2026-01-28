@@ -29,19 +29,22 @@
 using namespace std;
 namespace fs = std::filesystem;
 
-void LoadImages(const string &strImagePath, vector<string> &vstrImages, vector<double> &vTimeStamps);
+void LoadImages(const string &strImagePath, vector<string> &vstrImageLeft, vector<string> &vstrImageRight,
+                vector<double> &vTimeStamps);
 double get_image_timestamp(const std::string& image_name);
+void PlotImages(const cv::Mat &imLeft, const cv::Mat &imRight);
 
 int main(int argc, char **argv)
 {  
     if(argc != 4)
     {
-        cerr << endl << "Usage: ./seeker_mono path_to_vocabulary path_to_settings path_to_image_folder" << endl;
+        cerr << endl << "Usage: ./stereo_seeker path_to_vocabulary path_to_settings path_to_image_folder" << endl;
         return 1;
     }
 
     // Load all sequences:
-    vector<string> vstrImageFilenames;
+    vector<string> vstrImageLeft;
+    vector<string> vstrImageRight;
     vector<double> vTimestampsCam;
     int nImages;
 
@@ -50,10 +53,10 @@ int main(int argc, char **argv)
     cout << "Loading images...";
     string pathSeq(argv[3]);
 
-    LoadImages(pathSeq, vstrImageFilenames, vTimestampsCam);
+    LoadImages(pathSeq, vstrImageLeft, vstrImageRight, vTimestampsCam);
     cout << "LOADED!" << endl;
 
-    nImages = vstrImageFilenames.size();
+    nImages = vstrImageLeft.size();
     tot_images += nImages;
 
     // Vector for tracking time statistics
@@ -67,27 +70,42 @@ int main(int argc, char **argv)
     int fps = 5;
     float dT = 1.f/fps;
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
-    SIFT_SLAM3::System SLAM(argv[1],argv[2],SIFT_SLAM3::System::MONOCULAR, true);
+    SIFT_SLAM3::System SLAM(argv[1],argv[2],SIFT_SLAM3::System::STEREO, true);
     float imageScale = SLAM.GetImageScale();
 
     double t_resize = 0.f;
     double t_track = 0.f;
 
     // Main loop
-    cv::Mat im;
+    cv::Mat imLeft, imRight;
     int proccIm = 0;
-    for(int ni=485; ni<nImages; ni++, proccIm++)
+    for(int ni=0; ni<nImages; ni++, proccIm++)
     {
-
+        cout << "**** Processing frame " << ni << " of " << nImages << " ****" << endl;
         // Read image from file
-        im = cv::imread(string(pathSeq) + '/' + vstrImageFilenames[ni],cv::IMREAD_UNCHANGED); //CV_LOAD_IMAGE_UNCHANGED);
+        // left images rotated by 270 degrees
+        imLeft = cv::imread(string(pathSeq) + '/' + vstrImageLeft[ni],cv::IMREAD_UNCHANGED); //CV_LOAD_IMAGE_UNCHANGED);
+        cv::rotate(imLeft, imLeft, cv::ROTATE_90_CLOCKWISE);
+        // right images rotated by 90 degrees
+        imRight = cv::imread(string(pathSeq) + '/' + vstrImageRight[ni],cv::IMREAD_UNCHANGED); //CV_LOAD_IMAGE_UNCHANGED);
+        cv::rotate(imRight, imRight, cv::ROTATE_90_COUNTERCLOCKWISE);
         // double tframe = vTimestampsCam[ni];
         double tframe = ni*dT;
 
-        if(im.empty())
+        // cout << "Left image: " << vstrImageLeft[ni] << endl;
+        // cout << "Right image: " << vstrImageRight[ni] << endl;
+        // PlotImages(imLeft, imRight);
+
+        if(imLeft.empty())
         {
             cerr << endl << "Failed to load image at: "
-                 <<  vstrImageFilenames[ni] << endl;
+                 <<  vstrImageLeft[ni] << endl;
+            return 1;
+        }
+        if(imRight.empty())
+        {
+            cerr << endl << "Failed to load image at: "
+                 <<  vstrImageRight[ni] << endl;
             return 1;
         }
 
@@ -96,9 +114,10 @@ int main(int argc, char **argv)
 #ifdef REGISTER_TIMES
             std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
 #endif
-            int width = im.cols * imageScale;
-            int height = im.rows * imageScale;
-            cv::resize(im, im, cv::Size(width, height));
+            int width = imLeft.cols * imageScale;
+            int height = imLeft.rows * imageScale;
+            cv::resize(imLeft, imLeft, cv::Size(width, height));
+            cv::resize(imRight, imRight, cv::Size(width, height));
 #ifdef REGISTER_TIMES
             std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
 
@@ -111,7 +130,7 @@ int main(int argc, char **argv)
 
         // Pass the image to the SLAM system
         // cout << "tframe = " << tframe << endl;
-        SLAM.TrackMonocular(im,tframe); // TODO change to monocular_inertial
+        SLAM.TrackStereo(imLeft, imRight,tframe); // TODO change to monocular_inertial
 
         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 
@@ -156,6 +175,10 @@ int main(int argc, char **argv)
     //     SLAM.ChangeDataset();
     // }
 
+    // Wait for keypress
+    cout << "Press Enter to exit..." << endl;
+    cin.get();
+
     // Stop all threads
     SLAM.Shutdown();
 
@@ -176,10 +199,25 @@ int main(int argc, char **argv)
     return 0;
 }
 
-void LoadImages(const string &strImagePath, vector<string> &vstrImages, vector<double> &vTimeStamps)
+void PlotImages(const cv::Mat &imLeft, const cv::Mat &imRight)
+{
+    // Show the images
+    cv::namedWindow("Left Image", cv::WINDOW_NORMAL);
+    cv::namedWindow("Right Image", cv::WINDOW_NORMAL);
+    cv::imshow("Left Image", imLeft);
+    cv::imshow("Right Image", imRight);
+    
+    std::cout << "Press any key to continue..." << std::endl;
+    cv::waitKey(0);
+}
+
+
+
+void LoadImages(const string &strImagePath, vector<string> &vstrImageLeft, vector<string> &vstrImageRight, vector<double> &vTimeStamps)
 {
     vTimeStamps.reserve(5000);
-    vstrImages.reserve(5000);
+    vstrImageLeft.reserve(5000);
+    vstrImageRight.reserve(5000);
 
     // Check if the folder exists
     if (!fs::exists(strImagePath) || !fs::is_directory(strImagePath)) {
@@ -188,14 +226,22 @@ void LoadImages(const string &strImagePath, vector<string> &vstrImages, vector<d
 
     // Iterate over files in the directory
     for (const auto& entry : fs::directory_iterator(strImagePath)) {
-        if (entry.is_regular_file() && entry.path().extension() == ".png") {
-            vstrImages.push_back(entry.path().filename().string());
+        const std::string suffix_left  = "_AC16.png";
+        const std::string suffix_right = "_FC16.png";
+        const std::string filename = entry.path().filename().string();
+        // if (entry.is_regular_file() && entry.path().extension() == ".png") {
+        if (entry.is_regular_file() && filename.substr(filename.size() - suffix_left.size()) == suffix_left) {
+            vstrImageLeft.push_back(filename);
+        }
+        else if (entry.is_regular_file() && filename.substr(filename.size() - suffix_right.size()) == suffix_right) {
+            vstrImageRight.push_back(filename);
         }
     }
 
     // Sort the filenames in lexicographical order
-    std::sort(vstrImages.begin(), vstrImages.end());
-    for (const auto& image : vstrImages) {
+    std::sort(vstrImageLeft.begin(), vstrImageLeft.end());
+    std::sort(vstrImageRight.begin(), vstrImageRight.end());
+    for (const auto& image : vstrImageLeft) {
         vTimeStamps.push_back(get_image_timestamp(image));
     }
 }
