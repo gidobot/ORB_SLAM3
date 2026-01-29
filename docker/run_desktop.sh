@@ -1,12 +1,12 @@
 #! /bin/bash
-# export DISPLAY=$DISPLAY
-# xhost +
+export DISPLAY=$DISPLAY
+xhost +
 
 docker run --rm -it \
 	--net=host \
     --privileged \
+	--user 1000 \
 	--runtime nvidia \
-	--user $(id -u) \
 	--env=NVIDIA_DRIVER_CAPABILITIES=all \
 	-e DISPLAY=$DISPLAY \
 	--env=QT_X11_NO_MITSHM=1 \
@@ -19,8 +19,8 @@ docker run --rm -it \
 	-v ~/.docker_bash_history:/home/admin/.bash_history:rw \
 	-v ~/.tmux.conf:/home/admin/.tmux.conf \
 	-v $PWD/../:/SIFT_SLAM3:rw \
-	-v /media/gidobot/Data1:/data:ro \
-	-v /media/water:/media/water:ro \
+	-v /media/gidobot/Lizard202511:/media/gidobot/Lizard202511:ro \
+	-v /media/gidobot/Data:/media/gidobot/Data:ro \
 	-v /mnt/tmp:/mnt/tmp:ro \
 	-v ~/.docker_bash_history:/root/.bash_history \
 	-w /SIFT_SLAM3 \
@@ -29,3 +29,4 @@ docker run --rm -it \
 	bash
 
 # -v /media/kraft/af7cd17b-9563-477c-be1d-89aa6b8aebb6/data:/data:rw \
+	#--user $(id -u) \

@@ -189,7 +189,10 @@ void LoadImages(const string &strImagePath, vector<string> &vstrImages, vector<d
     // Iterate over files in the directory
     for (const auto& entry : fs::directory_iterator(strImagePath)) {
         if (entry.is_regular_file() && entry.path().extension() == ".png") {
-            vstrImages.push_back(entry.path().filename().string());
+            std::string filename = entry.path().filename().string();
+            if (filename.find("FC") != std::string::npos) {
+                vstrImages.push_back(filename);
+            }
         }
     }
 
