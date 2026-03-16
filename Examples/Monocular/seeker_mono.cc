@@ -75,14 +75,21 @@ int main(int argc, char **argv)
 
     // Main loop
     cv::Mat im;
-    int proccIm = 0;
-    for(int ni=485; ni<nImages; ni++, proccIm++)
+    for(int ni=0; ni<nImages; ni++)
     {
 
         // Read image from file
         im = cv::imread(string(pathSeq) + '/' + vstrImageFilenames[ni],cv::IMREAD_UNCHANGED); //CV_LOAD_IMAGE_UNCHANGED);
         // double tframe = vTimestampsCam[ni];
         double tframe = ni*dT;
+
+        if (ni > 0)
+            cout << "Image time diff to prev: " << vTimestampsCam[ni] - vTimestampsCam[ni-1];
+
+        // Plot the current image for debugging
+        cv::namedWindow("Debug Image", cv::WINDOW_NORMAL);
+        cv::imshow("Debug Image", im);
+        cv::waitKey(1); // Short wait to allow image display; increase if you want step-by-step
 
         if(im.empty())
         {

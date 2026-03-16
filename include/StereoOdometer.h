@@ -121,9 +121,9 @@ public:
 
       // Matrix motion = Matrix::inv(visual_odometer_->getMotion());
       Matrix motion = visual_odometer_->getMotion();
-      // std::cout << "Found %i matches with %i inliers.",
-                // visual_odometer_->getNumberOfMatches(),
-                // visual_odometer_->getNumberOfInliers();
+      std::cout << "Found %i matches with %i inliers.",
+                visual_odometer_->getNumberOfMatches(),
+                visual_odometer_->getNumberOfInliers();
       // ROS_DEBUG_STREAM("libviso2 returned the following motion:\n" << motion);
       Matrix camera_motion;
       // if image was replaced due to small motion we have to subtract the

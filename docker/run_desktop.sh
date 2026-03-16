@@ -5,7 +5,7 @@ xhost +
 docker run --rm -it \
 	--net=host \
     --privileged \
-	--user 1000 \
+	--user $(id -u) \
 	--runtime nvidia \
 	--env=NVIDIA_DRIVER_CAPABILITIES=all \
 	-e DISPLAY=$DISPLAY \
@@ -13,11 +13,11 @@ docker run --rm -it \
 	--pid=host \
 	--cap-add=SYS_ADMIN \
 	--cap-add=SYS_PTRACE \
-	-e XDG_RUNTIME_DIR=/run/user/1000 \
-	-v  ${XAUTHORITY:-$HOME/.Xauthority}:/home/admin/.Xauthority:rw \
+	-e XDG_RUNTIME_DIR=/run/user/$(id -u) \
+	-v  ${XAUTHORITY:-$HOME/.Xauthority}:/home/docker/.Xauthority:rw \
 	-v /tmp/.X11-unix:/tmp/.X11-unix:rw \
-	-v ~/.docker_bash_history:/home/admin/.bash_history:rw \
-	-v ~/.tmux.conf:/home/admin/.tmux.conf \
+	-v ~/.docker_bash_history:/home/docker/.bash_history:rw \
+	-v ~/.tmux.conf:/home/docker/.tmux.conf \
 	-v $PWD/../:/SIFT_SLAM3:rw \
 	-v /media/gidobot/Lizard202511:/media/gidobot/Lizard202511:ro \
 	-v /media/gidobot/Data:/media/gidobot/Data:ro \

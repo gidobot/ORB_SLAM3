@@ -67,7 +67,7 @@ int main(int argc, char **argv)
     cout.precision(17);
 
 
-    int fps = 5;
+    int fps = 10;
     float dT = 1.f/fps;
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
     SIFT_SLAM3::System SLAM(argv[1],argv[2],SIFT_SLAM3::System::STEREO, true);
@@ -83,12 +83,12 @@ int main(int argc, char **argv)
     {
         cout << "**** Processing frame " << ni << " of " << nImages << " ****" << endl;
         // Read image from file
-        // left images rotated by 270 degrees
         imLeft = cv::imread(string(pathSeq) + '/' + vstrImageLeft[ni],cv::IMREAD_UNCHANGED); //CV_LOAD_IMAGE_UNCHANGED);
-        cv::rotate(imLeft, imLeft, cv::ROTATE_90_CLOCKWISE);
-        // right images rotated by 90 degrees
+        // left images rotated by 270 degrees
+        // cv::rotate(imLeft, imLeft, cv::ROTATE_90_CLOCKWISE);
         imRight = cv::imread(string(pathSeq) + '/' + vstrImageRight[ni],cv::IMREAD_UNCHANGED); //CV_LOAD_IMAGE_UNCHANGED);
-        cv::rotate(imRight, imRight, cv::ROTATE_90_COUNTERCLOCKWISE);
+        // right images rotated by 90 degrees
+        // cv::rotate(imRight, imRight, cv::ROTATE_90_COUNTERCLOCKWISE);
         // double tframe = vTimestampsCam[ni];
         double tframe = ni*dT;
 

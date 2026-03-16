@@ -528,8 +528,8 @@ void Matcher_SIFT::matchFeaturesCUDA(int32_t method, const bool reset, Matrix *T
 
   matchingBF(siftdata_c_1, siftdata_c_2, siftdata_p_1, siftdata_p_2, p_matched_2, cf_matches, method, false, Tr_delta);
 
-  std::cout << "Stereo num matched: " << cf_matches.size() << std::endl;
-  // std::cout << "num matched: " << p_matched_2.size() << std::endl;
+  // std::cout << "Stereo num matched: " << cf_matches.size() << std::endl;
+  std::cout << "num matched: " << p_matched_2.size() << std::endl;
   // if (param.refinement>0)
     // refinement(p_matched_2,method);
   // removeOutliers(p_matched_2,method);
@@ -1169,8 +1169,8 @@ void Matcher_SIFT::computeFeatures(const cv::Mat& I, SiftData &siftdata) {
 #endif
 
   float initBlur = 1.6f;
-  // float thresh = 1.2f; // for stereo
-  float thresh = 0.5f; // for hybrid
+  float thresh = 1.2f; // for stereo
+  // float thresh = 0.5f; // for hybrid
 
   // float *memoryTmpCUDA = AllocSiftTempMemory(I.cols, I.rows, 5, false);
   // ExtractSift(siftdata, img, 5, initBlur, thresh, 0.0f, false, memoryTmpCUDA);
@@ -1692,6 +1692,8 @@ void Matcher_SIFT::matchingBF(SiftData &data1c, SiftData &data2c, SiftData &data
       }
     }
 
+    return;
+
     // Second do circular matching with previous stereo pair
     MatchSiftData(data1p, data2p);
     MatchSiftData(data2p, data2c);
@@ -1699,8 +1701,8 @@ void Matcher_SIFT::matchingBF(SiftData &data1c, SiftData &data2c, SiftData &data
     MatchSiftData(data1c, data1p);
 
     #ifdef MANAGEDMEM
-      ift1c = data1c.m_data;
-      ift2c = data2c.m_data;
+      sift1c = data1c.m_data;
+      sift2c = data2c.m_data;
       SiftPoint *sift1p = data1p.m_data;
       SiftPoint *sift2p = data2p.m_data;
     #else
@@ -1720,6 +1722,8 @@ void Matcher_SIFT::matchingBF(SiftData &data1c, SiftData &data2c, SiftData &data
 
       // if (sift2p[i2p].ambiguity > ratio_thresh)
         // continue;
+
+      // TODO: Bug here where i2c is sometimes larger than data2c.numPts
       i2c = sift2p[i2p].match;
 
       // if (sift2c[i2c].ambiguity > ratio_thresh)
@@ -1731,6 +1735,7 @@ void Matcher_SIFT::matchingBF(SiftData &data1c, SiftData &data2c, SiftData &data
 
       // if (sift1c[i1c].ambiguity > ratio_thresh)
       //   continue;
+      std::cout << "i1c: " << i1c << std::endl;
       i1p2 = sift1c[i1c].match;
 
       if (i1p == i1p2) {
@@ -1739,6 +1744,7 @@ void Matcher_SIFT::matchingBF(SiftData &data1c, SiftData &data2c, SiftData &data
         u1c = sift1c[i1c].xpos; v1c = sift1c[i1c].ypos;
         u2p = sift2p[i2p].xpos; v2p = sift2p[i2p].ypos;
         u1p = sift1p[i1p].xpos; v1p = sift1p[i1p].ypos;
+        cout << "Here 3\n";
 
         // if disparities are positive
         // if (1) {

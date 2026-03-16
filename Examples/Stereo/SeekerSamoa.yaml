@@ -1,0 +1,110 @@
+%YAML:1.0
+
+#--------------------------------------------------------------------------------------------
+# System config
+#--------------------------------------------------------------------------------------------
+
+# When the variables are commented, the system doesn't load a previous session or not store the current one
+
+# If the LoadFile doesn't exist, the system give a message and create a new Atlas from scratch
+#System.LoadAtlasFromFile: "Session_MH01_MH02_MH03_Stereo60_Pseudo"
+
+# The store file is created from the current session, if a file with the same name exists it is deleted
+#System.SaveAtlasToFile: "Session_MH01_MH02_MH03_Stereo60_Pseudo"
+
+#--------------------------------------------------------------------------------------------
+# Camera Parameters. Adjust them!
+#--------------------------------------------------------------------------------------------
+File.version: "1.0"
+
+Camera.type: "PinHole"
+
+# Camera calibration and distortion parameters (OpenCV) 
+# Pamaters set treating the aft camera as left and fore camera as right.
+# Parameter values have been adjusted assuming images are rotated to be properly aligned.
+# AC
+Camera1.fx: 3131.45241
+Camera1.fy: 3131.45241
+Camera1.cx: 1442.6166
+Camera1.cy: 1444.822
+
+Camera1.k1: -0.146384
+Camera1.k2: 0.391328
+Camera1.p1: 0.00014034
+Camera1.p2: -0.000192667
+
+# FC
+Camera2.fx: 3110.07056
+Camera2.fy: 3110.07056
+Camera2.cx: 1405.91548
+Camera2.cy: 1433.82269
+
+Camera2.k1: -0.113235
+Camera2.k2: 0.231658
+Camera2.p1: -0.00046783
+Camera2.p2: 0.000183958
+
+Camera.width: 2816
+Camera.height: 2848
+
+# Camera frames per second 
+Camera.fps: 10
+
+# Color order of the images (0: BGR, 1: RGB. It is ignored if images are grayscale)
+Camera.RGB: 0
+
+Stereo.ThDepth: 10.0
+Stereo.T_c1_c2: !!opencv-matrix
+  rows: 4
+  cols: 4
+  dt: f
+  data: [0.99999367, 0.00296558, -0.00196793, 0.07496710,
+         -0.00296260, 0.99999446, 0.00151549, 0.00024209,
+         0.00197241, -0.00150965, 0.99999692, 0.00155214,
+         0.0,  0.0,  0.0,  1.0]
+
+#--------------------------------------------------------------------------------------------
+# SIFT Parameters
+#--------------------------------------------------------------------------------------------
+
+# SIFT Extractor: Number of features per image
+SIFTextractor.nFeatures: 2000
+
+# SIFT Extractor: Max dimension of image
+SIFTextractor.maxDim: 2000
+
+# SIFT Extractor: Scale factor between levels in the scale pyramid  
+SIFTextractor.scaleFactor: 2.0
+
+# SIFT Extractor: Number of levels in the scale pyramid 
+SIFTextractor.nLevels: 5
+
+# SIFT Extractor: Fast threshold
+# Image is divided in a grid. At each cell FAST are extracted imposing a minimum response.
+# Firstly we impose iniThFAST. If no corners are detected we impose a lower value minThFAST
+# You can lower these values if your images have low contrast     
+SIFTextractor.iniThFAST: 20
+SIFTextractor.minThFAST: 7
+
+SIFTextractor.useDescnet: 0
+SIFTextractor.descnetModel: descnet.onnx
+
+SIFTmatcher.dispTolerance: 20.0
+SIFTmatcher.inlierThresh: 20.0
+SIFTmatcher.projThresh: 20.0
+
+#--------------------------------------------------------------------------------------------
+# Viewer Parameters
+#--------------------------------------------------------------------------------------------
+Viewer.KeyFrameSize: 0.6
+Viewer.KeyFrameLineWidth: 2.0
+Viewer.GraphLineWidth: 1.0
+Viewer.PointSize: 2.0
+Viewer.CameraSize: 0.7
+Viewer.CameraLineWidth: 3.0
+Viewer.ViewpointX: 0.0
+Viewer.ViewpointY: 0.0
+Viewer.ViewpointZ: -300.0
+Viewer.ViewpointF: 2000.0
+Viewer.imageViewScale: 0.25
+

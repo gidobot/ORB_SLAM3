@@ -175,7 +175,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Arguments for user creation (can be passed at build time)
-ARG USERNAME=admin
+ARG USERNAME=docker
 ARG USER_ID=1000
 ARG GROUP_ID=1000
 
